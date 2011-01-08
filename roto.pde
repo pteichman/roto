@@ -20,6 +20,14 @@ class RotoMidi : public Midi {
  public:
  RotoMidi(HardwareSerial &s) : Midi(s) { }
 
+    void handleControlChange(unsigned int channel, unsigned int controller,
+                             unsigned int value) {
+        /* map MIDI CC# 110-118 to drawbars */
+        uint8_t drawbar = controller - 109;
+
+        tonewheels_set_drawbar(drawbar, (127-value) >> 3);
+    }
+
     void handleNoteOn(unsigned int channel, unsigned int note,
                       unsigned int velocity) {
         uint8_t key = midiNoteToKey(note);
@@ -37,6 +45,9 @@ class RotoMidi : public Midi {
         num_keys_down--;
         if (num_keys_down == 0) {
             bitWrite(PORTD, 7, 0);
+            /* Clear all tonewheels when the last key is released. This
+             * is a workaround until live drawbar changes are supported. */
+            tonewheels_init();
         }
     }
 

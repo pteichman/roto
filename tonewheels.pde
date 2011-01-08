@@ -206,5 +206,9 @@ void tonewheels_key_up(uint8_t key) {
 }
 
 void tonewheels_set_drawbar(uint8_t drawbar, uint8_t value) {
+    if (drawbar > 9) {
+        return;
+    }
+
     drawbar_positions[drawbar-1] = value;
 }
