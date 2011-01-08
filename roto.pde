@@ -1,6 +1,6 @@
 /* Copyright (c) 2011 Peter Teichman */
 
-#include "Midi.h"
+#include <Midi.h>
 
 #include "tonewheels.h"
 
@@ -14,53 +14,35 @@ uint16_t cur_sample;
 volatile boolean gen_buffer1;
 volatile boolean gen_buffer2;
 
-static const uint8_t harmonics[] = { 0, 0, 19, 12, 24, 31, 36, 40, 43, 48 };
+uint8_t num_keys_down=0;
 
 class RotoMidi : public Midi {
  public:
  RotoMidi(HardwareSerial &s) : Midi(s) { }
 
-    uint8_t getDrawbarTonewheel(uint8_t key, uint8_t drawbar) {
-        uint8_t tonewheel = key + harmonics[drawbar];
-
-        if (tonewheel < 13) {
-            tonewheel = tonewheel + 12;
-        } else if (tonewheel > 103) {
-            tonewheel = tonewheel - 24;
-        } else if (tonewheel > 91) {
-            tonewheel = tonewheel - 12;
-        }
-
-        return tonewheel;
-    }
-
     void handleNoteOn(unsigned int channel, unsigned int note,
                       unsigned int velocity) {
-        uint8_t midiNote = note - 12;
+        uint8_t key = midiNoteToKey(note);
 
+        tonewheels_key_down(key);
+        num_keys_down++;
         bitWrite(PORTD, 7, 1);
-
-        tonewheel_volumes[getDrawbarTonewheel(midiNote, 1)] += 16;
-        tonewheel_volumes[getDrawbarTonewheel(midiNote, 2)] += 16;
-        tonewheel_volumes[getDrawbarTonewheel(midiNote, 4)] += 8;
-    }
-
-    void subtractVolume(uint8_t tonewheel, uint8_t volume) {
-        tonewheel_volumes[tonewheel] -= volume;
-
-        if (tonewheel_volumes[tonewheel] == 0) {
-            tonewheel_positions[tonewheel] = -tonewheel_rates[tonewheel];
-        }
     }
 
     void handleNoteOff(unsigned int channel, unsigned int note,
-                      unsigned int velocity) {
-        uint8_t midiNote = note - 12;
-        bitWrite(PORTD, 7, 0);
+                       unsigned int velocity) {
+        uint8_t key = midiNoteToKey(note);
 
-        subtractVolume(getDrawbarTonewheel(midiNote, 1), 16);
-        subtractVolume(getDrawbarTonewheel(midiNote, 2), 16);
-        subtractVolume(getDrawbarTonewheel(midiNote, 4), 8);
+        tonewheels_key_up(key);
+        num_keys_down--;
+        if (num_keys_down == 0) {
+            bitWrite(PORTD, 7, 0);
+        }
+    }
+
+ private:
+    uint8_t midiNoteToKey(unsigned int note) {
+        return note - 12;
     }
 };
 

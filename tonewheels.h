@@ -3,14 +3,12 @@
 #ifndef _TONEWHEELS_H
 #define _TONEWHEELS_H
 
-uint16_t organ_sample();
-
-extern const uint8_t sineTable[];
-extern uint8_t tonewheel_volumes[];
-extern const uint16_t tonewheel_rates[];
-extern uint16_t tonewheel_positions[];
-
 void tonewheels_init();
-uint16_t tonewheels_sample();
+void tonewheels_sample_v(uint16_t *samples, uint8_t count);
+
+void tonewheels_key_down(uint8_t key);
+void tonewheels_key_up(uint8_t key);
+
+void tonewheels_set_drawbar(uint8_t drawbar, uint8_t value);
 
 #endif /* _TONEWHEELS_H */

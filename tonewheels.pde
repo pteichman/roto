@@ -1,8 +1,15 @@
 /* Copyright (c) 2011 Peter Teichman */
 
+/* 91 tonewheels, plus one so arrays can be 1-indexed and use
+   real-life tonewheel numbering */
+#define NUM_TONEWHEELS (92)
+
+static uint16_t tonewheel_positions[NUM_TONEWHEELS];
+static uint8_t tonewheel_volumes[NUM_TONEWHEELS];
+
 /* Calculated from http://www.goodeveca.net/RotorOrgan/ToneWheelSpec.html,
  * given a 15625Hz timer. Each rate is (15625 * freq) >> 12. */
-const uint16_t tonewheel_rates[] = {
+static const uint16_t tonewheel_rates[] = {
     0,   /* 1-indexed to allow us to use real-life tonewheel numbering */
     124, /* C0, MIDI note 12 */
     132, /* C#0 */
@@ -97,9 +104,7 @@ const uint16_t tonewheel_rates[] = {
     22600 /* ~F#7 */
 };
 
-#define NUM_TONEWHEELS 92
-
-const uint8_t sineTable[] = {
+static const uint8_t sine[] = {
     0x80, 0x83, 0x86, 0x89, 0x8C, 0x8F, 0x92, 0x95, 0x98, 0x9B, 0x9E, 0xA2,
     0xA5, 0xA7, 0xAA, 0xAD, 0xB0, 0xB3, 0xB6, 0xB9, 0xBC, 0xBE, 0xC1, 0xC4,
     0xC6, 0xC9, 0xCB, 0xCE, 0xD0, 0xD3, 0xD5, 0xD7, 0xDA, 0xDC, 0xDE, 0xE0,
@@ -124,24 +129,14 @@ const uint8_t sineTable[] = {
     0x74, 0x77, 0x7A, 0x7D
 };
 
-uint16_t tonewheel_positions[NUM_TONEWHEELS];
-uint8_t tonewheel_volumes[NUM_TONEWHEELS];
-
-uint8_t drawbar_position[] = { 8, 8, 8, 0, 0, 0, 0, 0, 0 };
+static uint8_t drawbar_positions[] = { 8, 8, 0, 4, 0, 0, 0, 0, 0 };
+static const uint8_t drawbar_harmonics[] = { 0, 19, 12, 24, 31, 36, 40, 43, 48 };
 
 void tonewheels_init() {
     uint8_t i;
     for(i=0; i<NUM_TONEWHEELS; i++) {
         tonewheel_volumes[i] = 0;
     }
-
-    /*
-    tonewheel_volumes[13] = 32;
-    tonewheel_volumes[25] = 32;
-    tonewheel_volumes[37] = 32;
-    tonewheel_volumes[49] = 32;
-    tonewheel_volumes[61] = 32;
-    */
 }
 
 static uint16_t position;
@@ -163,7 +158,7 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
 
             for(j=0; j<count; j++) {
                 position += tonewheel_rates[i];
-                samples[j] += sineTable[position >> 8] * volume;
+                samples[j] += sine[position >> 8] * volume;
             }
 
             tonewheel_positions[i] = position;
@@ -171,4 +166,45 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
     }
 
     bitWrite(PORTD, 5, 0);
+}
+
+/* Tonewheel -> drawbar mappings from the table in
+ * http://theatreorgans.com/hammond/faq/a-100/a-100.html. Done in code
+ * to save space. */
+uint8_t get_drawbar_tonewheel(uint8_t key, uint8_t drawbar) {
+    uint8_t tonewheel = key + drawbar_harmonics[drawbar];
+
+    if (tonewheel < 13) {
+        tonewheel = tonewheel  + 12;
+    } else if (tonewheel > 103) {
+        tonewheel = tonewheel - 24;
+    } else if (tonewheel > 91) {
+        tonewheel = tonewheel - 12;
+    }
+
+    return tonewheel;
+}
+
+void tonewheels_key_down(uint8_t key) {
+    uint8_t i;
+    uint8_t tonewheel;
+
+    for (i=0; i<9; i++) {
+        tonewheel = get_drawbar_tonewheel(key, i);
+        tonewheel_volumes[tonewheel] += drawbar_positions[i];
+    }
+}
+
+void tonewheels_key_up(uint8_t key) {
+    uint8_t i;
+    uint8_t tonewheel;
+
+    for (i=0; i<9; i++) {
+        tonewheel = get_drawbar_tonewheel(key, i);
+        tonewheel_volumes[tonewheel] -= drawbar_positions[i];
+    }
+}
+
+void tonewheels_set_drawbar(uint8_t drawbar, uint8_t value) {
+    drawbar_positions[drawbar-1] = value;
 }
