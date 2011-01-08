@@ -5,13 +5,14 @@
 #include "tonewheels.h"
 
 #define BUFFER_LEN 150
-uint16_t buffer_half1[BUFFER_LEN];
-uint16_t buffer_half2[BUFFER_LEN];
+
+uint16_t buffer1[BUFFER_LEN];
+uint16_t buffer2[BUFFER_LEN];
 uint16_t *cur = 0;
 uint16_t cur_sample;
 
-volatile boolean gen_half1;
-volatile boolean gen_half2;
+volatile boolean gen_buffer1;
+volatile boolean gen_buffer2;
 
 static const uint8_t harmonics[] = { 0, 0, 19, 12, 24, 31, 36, 40, 43, 48 };
 
@@ -88,9 +89,9 @@ void setup() {
     DDRB |= 0x2E;
     PORTB |= (1<<1);
 
-    tonewheels_sample_v(&buffer_half1[0], BUFFER_LEN);
-    tonewheels_sample_v(&buffer_half2[0], BUFFER_LEN);
-    cur = &buffer_half1[0];
+    tonewheels_sample_v(&buffer1[0], BUFFER_LEN);
+    tonewheels_sample_v(&buffer2[0], BUFFER_LEN);
+    cur = &buffer1[0];
 
     sei();
 }
@@ -112,15 +113,15 @@ ISR(TIMER2_COMPA_vect) {
 
     PORTB |= (1<<1);
 
-    if (cur == &buffer_half1[BUFFER_LEN]) {
-        /* regenerate the first half once we're through with it */
-        gen_half1 = true;
-        cur = &buffer_half2[0];
+    if (cur == &buffer1[BUFFER_LEN]) {
+        /* regenerate the first buffer once we're through with it */
+        gen_buffer1 = true;
+        cur = &buffer2[0];
         bitWrite(PORTD, 4, 0);
-    } else if (cur == &buffer_half2[BUFFER_LEN]) {
-        /* regenerate the second half */
-        gen_half2 = true;
-        cur = &buffer_half1[0];
+    } else if (cur == &buffer2[BUFFER_LEN]) {
+        /* regenerate the second buffer */
+        gen_buffer2 = true;
+        cur = &buffer1[0];
         bitWrite(PORTD, 4, 1);
     }
 }
@@ -129,12 +130,12 @@ void loop() {
     bitWrite(PORTD, 6, 0);
     bitWrite(PORTD, 6, 1);
 
-    if (gen_half1) {
-        tonewheels_sample_v(&buffer_half1[0], BUFFER_LEN);
-        gen_half1 = false;
-    } else if (gen_half2) {
-        tonewheels_sample_v(&buffer_half2[0], BUFFER_LEN);
-        gen_half2 = false;
+    if (gen_buffer1) {
+        tonewheels_sample_v(&buffer1[0], BUFFER_LEN);
+        gen_buffer1 = false;
+    } else if (gen_buffer2) {
+        tonewheels_sample_v(&buffer2[0], BUFFER_LEN);
+        gen_buffer2 = false;
     }
 
     midi.poll();
