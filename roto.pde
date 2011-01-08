@@ -1,3 +1,5 @@
+/* Copyright (c) 2011 Peter Teichman */
+
 #include "Midi.h"
 
 #include "tonewheels.h"

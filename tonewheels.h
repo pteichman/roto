@@ -1,3 +1,5 @@
+/* Copyright (c) 2011 Peter Teichman */
+
 #ifndef _TONEWHEELS_H
 #define _TONEWHEELS_H
 

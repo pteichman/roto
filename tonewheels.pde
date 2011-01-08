@@ -1,3 +1,5 @@
+/* Copyright (c) 2011 Peter Teichman */
+
 /* Calculated from http://www.goodeveca.net/RotorOrgan/ToneWheelSpec.html,
  * given a 15625Hz timer. Each rate is (15625 * freq) >> 12. */
 const uint16_t tonewheel_rates[] = {
