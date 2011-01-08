@@ -1,5 +1,3 @@
-#include <avr/pgmspace.h>
-
 #include "Midi.h"
 
 #include "tonewheels.h"
