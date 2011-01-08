@@ -144,9 +144,6 @@ static uint8_t volume;
 void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
     uint8_t i, j;
 
-    bitWrite(PORTD, 5, 0);
-    bitWrite(PORTD, 5, 1);
-
     for (i=0; i<count; i++) {
         samples[i] = 0;
     }
@@ -164,8 +161,6 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
             tonewheel_positions[i] = position;
         }
     }
-
-    bitWrite(PORTD, 5, 0);
 }
 
 /* Tonewheel -> drawbar mappings from the table in

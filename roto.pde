@@ -63,10 +63,10 @@ void setup() {
     tonewheels_init();
     midi.begin(0);
 
+    /* MidiVox DATA LED */
     pinMode(7, OUTPUT);
-    pinMode(6, OUTPUT);
-    pinMode(5, OUTPUT);
-    pinMode(4, OUTPUT);
+
+    cli();
 
     /* Enable interrupt on timer2 == 127, with clk/8 prescaler. At 16MHz,
        this gives a timer interrupt at 15625Hz. */
@@ -110,19 +110,14 @@ ISR(TIMER2_COMPA_vect) {
         /* regenerate the first buffer once we're through with it */
         gen_buffer1 = true;
         cur = &buffer2[0];
-        bitWrite(PORTD, 4, 0);
     } else if (cur == &buffer2[BUFFER_LEN]) {
         /* regenerate the second buffer */
         gen_buffer2 = true;
         cur = &buffer1[0];
-        bitWrite(PORTD, 4, 1);
     }
 }
 
 void loop() {
-    bitWrite(PORTD, 6, 0);
-    bitWrite(PORTD, 6, 1);
-
     if (gen_buffer1) {
         tonewheels_sample_v(&buffer1[0], BUFFER_LEN);
         gen_buffer1 = false;
@@ -132,6 +127,4 @@ void loop() {
     }
 
     midi.poll();
-
-    bitWrite(PORTD, 6, 0);
 }
