@@ -5,10 +5,9 @@ http://www.narbotic.com/kits/midivox/
 
 It supports drawbar changes on MIDI CC# 110-118.
 
-This is in an early stage of development. It doesn't support changing
-the drawbars while notes are being played (you'll get audible
-glitches). There is no emulation of a rotating speaker cabinet, so the
-sound output is somewhat flat.
+This is in an early stage of development. Drawbars have not been
+tweaked to sound like an actual organ, and there is no vibrato,
+percussion, or emulation of a rotating speaker cabinet.
 
 There is a small glitch when notes are started.
 

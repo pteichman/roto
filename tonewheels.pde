@@ -3,12 +3,15 @@
 /* 91 tonewheels, plus one so arrays can be 1-indexed and use
    real-life tonewheel numbering */
 #define NUM_TONEWHEELS (92)
+#define NUM_KEYS (61)
 
 static uint16_t tonewheel_positions[NUM_TONEWHEELS];
 static uint8_t tonewheel_volumes[NUM_TONEWHEELS];
 
 static uint8_t num_active_tonewheels;
 static uint8_t active_tonewheels[NUM_TONEWHEELS];
+
+static uint8_t active_keys[NUM_KEYS];
 
 /* Calculated from http://www.goodeveca.net/RotorOrgan/ToneWheelSpec.html,
  * given a 15625Hz timer. Each rate is (15625 * freq) >> 12. */
@@ -193,7 +196,7 @@ static void tonewheels_rescan_active() {
     num_active_tonewheels = j;
 }
 
-void tonewheels_key_down(uint8_t key) {
+static void tonewheels_add_key_drawbars(uint8_t key) {
     uint8_t i;
     uint8_t tonewheel;
 
@@ -201,11 +204,21 @@ void tonewheels_key_down(uint8_t key) {
         tonewheel = get_drawbar_tonewheel(key, i);
         tonewheel_volumes[tonewheel] += drawbar_positions[i];
     }
+}
 
+void tonewheels_key_down(uint8_t key) {
+    if (key > NUM_KEYS-1) {
+        return;
+    }
+
+    active_keys[key] = 1;
+    tonewheels_add_key_drawbars(key);
+
+    /* compact the list of active tonewheels */
     tonewheels_rescan_active();
 }
 
-void tonewheels_key_up(uint8_t key) {
+static void tonewheels_sub_key_drawbars(uint8_t key) {
     uint8_t i;
     uint8_t tonewheel;
 
@@ -213,14 +226,37 @@ void tonewheels_key_up(uint8_t key) {
         tonewheel = get_drawbar_tonewheel(key, i);
         tonewheel_volumes[tonewheel] -= drawbar_positions[i];
     }
+}
 
+void tonewheels_key_up(uint8_t key) {
+    if (key > NUM_KEYS-1) {
+        return;
+    }
+
+    active_keys[key] = 0;
+    tonewheels_sub_key_drawbars(key);
+
+    /* compact the list of active tonewheels */
     tonewheels_rescan_active();
 }
 
 void tonewheels_set_drawbar(uint8_t drawbar, uint8_t value) {
+    uint8_t i;
+
     if (drawbar > 9) {
         return;
     }
 
     drawbar_positions[drawbar-1] = value;
+
+    /* zero out the active tonewheels and recreate them from active keys */
+    tonewheels_init();
+    for (i=0; i<NUM_KEYS; i++) {
+        if (active_keys[i]) {
+            tonewheels_add_key_drawbars(i);
+        }
+    }
+
+    /* compact the list of active tonewheels */
+    tonewheels_rescan_active();
 }
