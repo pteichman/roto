@@ -1,0 +1,23 @@
+roto is a sound synthesis program that mimics a tonewheel-based organ,
+similar to a Hammond B series. It runs on an Arduino board with a
+MidiVox shield:
+http://www.narbotic.com/kits/midivox/
+
+It supports drawbar changes on MIDI CC# 110-118.
+
+This is in an early stage of development. It doesn't support changing
+the drawbars while notes are being played (you'll get audible
+glitches). There is no emulation of a rotating speaker cabinet, so the
+sound output is somewhat flat.
+
+There is a small glitch when notes are started.
+
+Its performance degrades when many notes are played at the same time,
+and no provision is made for limiting the number of notes in the
+code. Play too many and you'll get unpleasant distortion.
+
+This depends on the number of oscillators that are in use, which can
+be controlled by the drawbars. Sticking to the classic 888000000
+drawbar setting (roto's default) will leave you with a decent sound
+and enough disabled oscillators (the 0's) to be able to play a few
+notes at the same time.
