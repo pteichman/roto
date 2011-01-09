@@ -6,6 +6,8 @@
 
 static uint16_t tonewheel_positions[NUM_TONEWHEELS];
 static uint8_t tonewheel_volumes[NUM_TONEWHEELS];
+
+static uint8_t num_active_tonewheels;
 static uint8_t active_tonewheels[NUM_TONEWHEELS];
 
 /* Calculated from http://www.goodeveca.net/RotorOrgan/ToneWheelSpec.html,
@@ -141,12 +143,12 @@ void tonewheels_init() {
 }
 
 static uint16_t position;
-static uint8_t volume;
 void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
     uint8_t wheel, sample;
-    uint8_t *cur = active_tonewheels;
+    uint8_t i;
 
-    while ((wheel = *cur++)) {
+    for (i=0; i<num_active_tonewheels; i++) {
+        wheel = active_tonewheels[i];
         position = tonewheel_positions[wheel];
 
         for (sample=0; sample<count; sample++) {
@@ -180,16 +182,15 @@ static void tonewheels_rescan_active() {
        pack them into active_tonewheels for quicker iteration in
        tonewheels_sample_v() */
 
-    uint8_t i;
-    uint8_t *cur = active_tonewheels;
+    uint8_t i, j=0;
 
     for (i=0; i<NUM_TONEWHEELS; i++) {
         if (tonewheel_volumes[i] != 0) {
-            *cur++ = i;
+            active_tonewheels[j++] = i;
         }
     }
 
-    *cur = 0;
+    num_active_tonewheels = j;
 }
 
 void tonewheels_key_down(uint8_t key) {
