@@ -93,7 +93,7 @@ ISR(TIMER2_COMPA_vect) {
     /* OCR2A has been cleared, per TCCR2A above */
     OCR2A = 127;
 
-    cur_sample = (*cur++) >> 4;
+    cur_sample = *cur >> 4;
 
     /* buffered, 1x gain, active mode */
     PORTB &= ~(1<<1);
@@ -105,6 +105,9 @@ ISR(TIMER2_COMPA_vect) {
     while (!(SPSR & (1<<SPIF)));
 
     PORTB |= (1<<1);
+
+    /* Clear the sample we just played, and increment the pointer. */
+    *cur++ = 0;
 
     if (cur == &buffer1[BUFFER_LEN]) {
         /* regenerate the first buffer once we're through with it */

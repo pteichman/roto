@@ -144,10 +144,6 @@ static uint8_t volume;
 void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
     uint8_t i, j;
 
-    for (i=0; i<count; i++) {
-        samples[i] = 0;
-    }
-
     /* for each tonewheel, increment all its samples */
     for (i=0; i<NUM_TONEWHEELS; i++) {
         if ((volume = tonewheel_volumes[i])) {
