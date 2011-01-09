@@ -6,6 +6,7 @@
 
 static uint16_t tonewheel_positions[NUM_TONEWHEELS];
 static uint8_t tonewheel_volumes[NUM_TONEWHEELS];
+static uint8_t active_tonewheels[NUM_TONEWHEELS];
 
 /* Calculated from http://www.goodeveca.net/RotorOrgan/ToneWheelSpec.html,
  * given a 15625Hz timer. Each rate is (15625 * freq) >> 12. */
@@ -142,20 +143,18 @@ void tonewheels_init() {
 static uint16_t position;
 static uint8_t volume;
 void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
-    uint8_t i, j;
+    uint8_t wheel, sample;
+    uint8_t *cur = active_tonewheels;
 
-    /* for each tonewheel, increment all its samples */
-    for (i=0; i<NUM_TONEWHEELS; i++) {
-        if ((volume = tonewheel_volumes[i])) {
-            position = tonewheel_positions[i];
+    while ((wheel = *cur++)) {
+        position = tonewheel_positions[wheel];
 
-            for(j=0; j<count; j++) {
-                position += tonewheel_rates[i];
-                samples[j] += sine[position >> 8] * volume;
-            }
-
-            tonewheel_positions[i] = position;
+        for (sample=0; sample<count; sample++) {
+            position += tonewheel_rates[wheel];
+            samples[sample] += sine[position >> 8] * tonewheel_volumes[wheel];
         }
+
+        tonewheel_positions[wheel] = position;
     }
 }
 
@@ -176,6 +175,23 @@ uint8_t get_drawbar_tonewheel(uint8_t key, uint8_t drawbar) {
     return tonewheel;
 }
 
+static void tonewheels_rescan_active() {
+    /* scan the active tonewheels (tonewheel_volumes[wheel] != 0) and
+       pack them into active_tonewheels for quicker iteration in
+       tonewheels_sample_v() */
+
+    uint8_t i;
+    uint8_t *cur = active_tonewheels;
+
+    for (i=0; i<NUM_TONEWHEELS; i++) {
+        if (tonewheel_volumes[i] != 0) {
+            *cur++ = i;
+        }
+    }
+
+    *cur = 0;
+}
+
 void tonewheels_key_down(uint8_t key) {
     uint8_t i;
     uint8_t tonewheel;
@@ -184,6 +200,8 @@ void tonewheels_key_down(uint8_t key) {
         tonewheel = get_drawbar_tonewheel(key, i);
         tonewheel_volumes[tonewheel] += drawbar_positions[i];
     }
+
+    tonewheels_rescan_active();
 }
 
 void tonewheels_key_up(uint8_t key) {
@@ -194,6 +212,8 @@ void tonewheels_key_up(uint8_t key) {
         tonewheel = get_drawbar_tonewheel(key, i);
         tonewheel_volumes[tonewheel] -= drawbar_positions[i];
     }
+
+    tonewheels_rescan_active();
 }
 
 void tonewheels_set_drawbar(uint8_t drawbar, uint8_t value) {
