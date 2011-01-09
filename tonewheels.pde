@@ -130,7 +130,7 @@ static const uint8_t sine[] = {
     0x74, 0x77, 0x7A, 0x7D
 };
 
-static uint8_t drawbar_positions[] = { 8, 8, 0, 4, 0, 0, 0, 0, 0 };
+static uint8_t drawbar_positions[] = { 8, 8, 8, 0, 0, 0, 0, 0, 0 };
 static const uint8_t drawbar_harmonics[] = { 0, 19, 12, 24, 31, 36, 40, 43, 48 };
 
 void tonewheels_init() {
