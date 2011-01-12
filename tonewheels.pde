@@ -211,8 +211,10 @@ void tonewheels_key_down(uint8_t key) {
         return;
     }
 
-    active_keys[key] = 1;
-    tonewheels_add_key_drawbars(key);
+    if (!active_keys[key]) {
+        active_keys[key] = 1;
+        tonewheels_add_key_drawbars(key);
+    }
 
     /* compact the list of active tonewheels */
     tonewheels_rescan_active();
@@ -233,8 +235,10 @@ void tonewheels_key_up(uint8_t key) {
         return;
     }
 
-    active_keys[key] = 0;
-    tonewheels_sub_key_drawbars(key);
+    if (active_keys[key]) {
+        active_keys[key] = 0;
+        tonewheels_sub_key_drawbars(key);
+    }
 
     /* compact the list of active tonewheels */
     tonewheels_rescan_active();
