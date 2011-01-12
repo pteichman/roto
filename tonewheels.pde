@@ -169,6 +169,7 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
 uint8_t get_drawbar_tonewheel(uint8_t key, uint8_t drawbar) {
     uint8_t tonewheel = key + drawbar_harmonics[drawbar];
 
+    /* adjustments to introduce upper/lower foldback */
     if (tonewheel < 13) {
         tonewheel = tonewheel  + 12;
     } else if (tonewheel > 103) {
