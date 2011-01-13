@@ -136,7 +136,18 @@ static const uint8_t sine[] = {
 };
 
 static uint8_t drawbar_positions[] = { 8, 8, 8, 0, 0, 0, 0, 0, 0 };
-static const uint8_t drawbar_harmonics[] = { 0, 19, 12, 24, 31, 36, 40, 43, 48 };
+
+/* 16' (lower fundamental)
+ * 5 1/3' (lower 3rd fundamental)
+ * 8' (fundamental),
+ * 4' (first even harmonic),
+ * 2 2/3' (first odd),
+ * 2' (second even),
+ * 1 3/5' (second odd),
+ * 1 1/7' (third odd),
+ * 1' (third even) */
+static const uint8_t drawbar_harmonics[] =
+    { 0, 19, 12, 24, 31, 36, 40, 43, 48 };
 
 void tonewheels_init() {
     uint8_t i;
