@@ -15,6 +15,7 @@ volatile boolean gen_buffer1;
 volatile boolean gen_buffer2;
 
 uint8_t num_keys_down=0;
+volatile static uint16_t percussion_acc;
 
 class RotoMidi : public Midi {
  public:
@@ -33,6 +34,11 @@ class RotoMidi : public Midi {
         uint8_t key = midiNoteToKey(note);
 
         tonewheels_key_down(key);
+        if (!num_keys_down) {
+            tonewheels_set_percussion_key(key);
+            percussion_acc = 0xE000;
+        }
+
         num_keys_down++;
         bitWrite(PORTD, 7, 1);
     }
@@ -109,6 +115,13 @@ ISR(TIMER2_COMPA_vect) {
     /* Clear the sample we just played, and increment the pointer. */
     *cur++ = 0;
 
+    /* increment the percussion accumulator */
+    if (percussion_acc > 16) {
+        percussion_acc -= 16;
+    } else {
+        percussion_acc = 0;
+    }
+
     if (cur == &buffer1[BUFFER_LEN]) {
         /* regenerate the first buffer once we're through with it */
         gen_buffer1 = true;
@@ -120,6 +133,10 @@ ISR(TIMER2_COMPA_vect) {
     }
 }
 
+boolean key_down = false;
+unsigned long t = 0;
+
+uint16_t time;
 void loop() {
     if (gen_buffer1) {
         tonewheels_sample_v(&buffer1[0], BUFFER_LEN);
@@ -127,6 +144,11 @@ void loop() {
     } else if (gen_buffer2) {
         tonewheels_sample_v(&buffer2[0], BUFFER_LEN);
         gen_buffer2 = false;
+    }
+
+    if (percussion_acc > 0) {
+        /* cut down to a 4-bit volume [0..15] */
+        tonewheels_set_percussion_volume(percussion_acc >> 12);
     }
 
     midi.poll();

@@ -8,6 +8,10 @@
 static uint16_t tonewheel_positions[NUM_TONEWHEELS];
 static uint8_t tonewheel_volumes[NUM_TONEWHEELS];
 
+/* An extra per-tonewheel volume boost. Used to implement percussion and
+ * eventually an attack envelope. */
+static int8_t tonewheel_volumes_extra[NUM_TONEWHEELS];
+
 static uint8_t num_active_tonewheels;
 static uint8_t active_tonewheels[NUM_TONEWHEELS];
 
@@ -138,11 +142,19 @@ static const uint8_t sine[] = {
 static uint8_t drawbar_positions[] = { 8, 8, 8, 0, 0, 0, 0, 0, 0 };
 static const uint8_t drawbar_harmonics[] = { 0, 19, 12, 24, 31, 36, 40, 43, 48 };
 
+static uint8_t tonewheels_percussion_tonewheel;
+static uint8_t tonewheels_percussion_volume;
+static uint8_t tonewheels_percussion_drawbar = 4;
+
 void tonewheels_init() {
     uint8_t i;
     for(i=0; i<NUM_TONEWHEELS; i++) {
         tonewheel_volumes[i] = 0;
+        tonewheel_volumes_extra[i] = 0;
     }
+
+    tonewheels_percussion_tonewheel = 0;
+    tonewheels_percussion_volume = 0;
 }
 
 static uint16_t position;
@@ -156,7 +168,8 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
 
         for (sample=0; sample<count; sample++) {
             position += tonewheel_rates[wheel];
-            samples[sample] += sine[position >> 8] * tonewheel_volumes[wheel];
+            samples[sample] += sine[position >> 8] *
+                (tonewheel_volumes[wheel] + tonewheel_volumes_extra[wheel]);
         }
 
         tonewheel_positions[wheel] = position;
@@ -187,11 +200,21 @@ static void tonewheels_rescan_active() {
        tonewheels_sample_v() */
 
     uint8_t i, j=0;
+    uint8_t seen_percussion=0;
 
     for (i=0; i<NUM_TONEWHEELS; i++) {
-        if (tonewheel_volumes[i] != 0) {
+        if (tonewheel_volumes[i] != 0
+            || i == tonewheels_percussion_tonewheel) {
             active_tonewheels[j++] = i;
         }
+    }
+
+    /* apply percussion */
+    if (tonewheels_percussion_volume) {
+        tonewheel_volumes_extra[tonewheels_percussion_tonewheel]
+            = tonewheels_percussion_volume;
+    } else {
+        tonewheel_volumes_extra[tonewheels_percussion_tonewheel] = 0;
     }
 
     num_active_tonewheels = j;
@@ -202,8 +225,10 @@ static void tonewheels_add_key_drawbars(uint8_t key) {
     uint8_t tonewheel;
 
     for (i=0; i<9; i++) {
-        tonewheel = get_drawbar_tonewheel(key, i);
-        tonewheel_volumes[tonewheel] += drawbar_positions[i];
+        if (i != tonewheels_percussion_drawbar) {
+            tonewheel = get_drawbar_tonewheel(key, i);
+            tonewheel_volumes[tonewheel] += drawbar_positions[i];
+        }
     }
 }
 
@@ -226,8 +251,10 @@ static void tonewheels_sub_key_drawbars(uint8_t key) {
     uint8_t tonewheel;
 
     for (i=0; i<9; i++) {
-        tonewheel = get_drawbar_tonewheel(key, i);
-        tonewheel_volumes[tonewheel] -= drawbar_positions[i];
+        if (i != tonewheels_percussion_drawbar) {
+            tonewheel = get_drawbar_tonewheel(key, i);
+            tonewheel_volumes[tonewheel] -= drawbar_positions[i];
+        }
     }
 }
 
@@ -263,5 +290,18 @@ void tonewheels_set_drawbar(uint8_t drawbar, uint8_t value) {
     }
 
     /* compact the list of active tonewheels */
+    tonewheels_rescan_active();
+}
+
+void tonewheels_set_percussion_key(uint8_t key) {
+    /* add in the appropriate amount of percussion */
+    if (tonewheels_percussion_drawbar) {
+        tonewheels_percussion_tonewheel =
+            get_drawbar_tonewheel(key, tonewheels_percussion_drawbar);
+    }
+}
+
+void tonewheels_set_percussion_volume(uint8_t volume) {
+    tonewheels_percussion_volume = volume;
     tonewheels_rescan_active();
 }
