@@ -2,6 +2,8 @@
 
 #include <Midi.h>
 
+#define ROTO_TEST_TONES
+
 #include "tonewheels.h"
 
 #define BUFFER_LEN 128
@@ -120,6 +122,11 @@ ISR(TIMER2_COMPA_vect) {
     }
 }
 
+#ifdef ROTO_TEST_TONES
+uint16_t lastChange = 0;
+boolean playing = false;
+#endif
+
 void loop() {
     if (gen_buffer1) {
         tonewheels_sample_v(&buffer1[0], BUFFER_LEN);
@@ -130,4 +137,24 @@ void loop() {
     }
 
     midi.poll();
+
+#ifdef ROTO_TEST_TONES
+    uint16_t now = millis();
+    if (now - lastChange > 1000) {
+        lastChange = now;
+        playing = !playing;
+
+        if (playing) {
+            midi.handleNoteOn(1, 48, 1);
+            midi.handleNoteOn(1, 52, 1);
+            midi.handleNoteOn(1, 55, 1);
+            midi.handleNoteOn(1, 58, 1);
+        } else {
+            midi.handleNoteOff(1, 48, 1);
+            midi.handleNoteOff(1, 52, 1);
+            midi.handleNoteOff(1, 55, 1);
+            midi.handleNoteOff(1, 58, 1);
+        }
+    }
+#endif
 }
