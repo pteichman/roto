@@ -95,9 +95,9 @@ ISR(TIMER2_COMPA_vect) {
 
     cur_sample = *cur >> 4;
 
-    /* buffered, 1x gain, active mode */
     PORTB &= ~(1<<1);
 
+    /* buffered, 1x gain, active mode */
     SPDR = highByte(cur_sample) | 0x70;
     while (!(SPSR & (1<<SPIF)));
 
