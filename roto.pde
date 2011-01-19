@@ -4,7 +4,7 @@
 
 #include "tonewheels.h"
 
-#define BUFFER_LEN 150
+#define BUFFER_LEN 128
 
 uint16_t buffer1[BUFFER_LEN];
 uint16_t buffer2[BUFFER_LEN];
