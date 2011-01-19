@@ -156,22 +156,23 @@ void tonewheels_init() {
     }
 }
 
-void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
-    uint16_t position, rate;
-    uint8_t wheel, sample;
+void tonewheels_sample_v(uint16_t *samples, uint8_t len) {
+    uint16_t pos, rate;
+    uint8_t wheel, vol;
     uint8_t i;
+    uint8_t *active = active_tonewheels;
 
-    for (i=0; i<num_active_tonewheels; i++) {
-        wheel = active_tonewheels[i];
-        position = tonewheel_positions[wheel];
+    while ((wheel = *(active++))) {
+        pos = tonewheel_positions[wheel];
+        vol = tonewheel_volumes[wheel];
         rate = tonewheel_rates[wheel];
 
-        for (sample=0; sample<count; sample++) {
-            position += rate;
-            samples[sample] += sine[position >> 8] * tonewheel_volumes[wheel];
+        for (i=0; i<len; i++) {
+            pos += rate;
+            samples[i] += sine[pos >> 8] * vol;
         }
 
-        tonewheel_positions[wheel] = position;
+        tonewheel_positions[wheel] = pos;
     }
 }
 
@@ -207,6 +208,7 @@ static void tonewheels_rescan_active() {
     }
 
     num_active_tonewheels = j;
+    active_tonewheels[j] = 0;
 }
 
 static void tonewheels_add_key_drawbars(uint8_t key) {
