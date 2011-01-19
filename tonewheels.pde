@@ -157,16 +157,17 @@ void tonewheels_init() {
 }
 
 void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
-    uint16_t position;
+    uint16_t position, rate;
     uint8_t wheel, sample;
     uint8_t i;
 
     for (i=0; i<num_active_tonewheels; i++) {
         wheel = active_tonewheels[i];
         position = tonewheel_positions[wheel];
+        rate = tonewheel_rates[wheel];
 
         for (sample=0; sample<count; sample++) {
-            position += tonewheel_rates[wheel];
+            position += rate;
             samples[sample] += sine[position >> 8] * tonewheel_volumes[wheel];
         }
 
