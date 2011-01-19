@@ -156,8 +156,8 @@ void tonewheels_init() {
     }
 }
 
-static uint16_t position;
 void tonewheels_sample_v(uint16_t *samples, uint8_t count) {
+    uint16_t position;
     uint8_t wheel, sample;
     uint8_t i;
 
