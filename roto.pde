@@ -2,7 +2,7 @@
 
 #include <Midi.h>
 
-#define ROTO_TEST_TONES
+#undef ROTO_TEST_TONES
 
 #include "tonewheels.h"
 
