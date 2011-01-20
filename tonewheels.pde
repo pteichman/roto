@@ -3,7 +3,10 @@
 /* 91 tonewheels, plus one so arrays can be 1-indexed and use
    real-life tonewheel numbering */
 #define NUM_TONEWHEELS (92)
+#define NUM_DRAWBARS (9)
 #define NUM_KEYS (61)
+
+#define MAX_TONEWHEEL_VOLUME (16)
 
 static uint16_t tonewheel_positions[NUM_TONEWHEELS];
 static uint8_t tonewheel_volumes[NUM_TONEWHEELS];
@@ -214,10 +217,40 @@ static void tonewheels_rescan_active() {
 static void tonewheels_add_key_drawbars(uint8_t key) {
     uint8_t i;
     uint8_t tonewheel;
+    uint8_t volume;
 
-    for (i=0; i<9; i++) {
+    for (i=0; i<NUM_DRAWBARS; i++) {
         tonewheel = get_drawbar_tonewheel(key, i);
-        tonewheel_volumes[tonewheel] += drawbar_positions[i];
+        volume = tonewheel_volumes[tonewheel] + drawbar_positions[i];
+
+        tonewheel_volumes[tonewheel] = min(volume, 8);
+    }
+}
+
+void tonewheels_scan_active_keys() {
+    /* apply volumes to tonewheels based on the keys that are down */
+    uint8_t tonewheel;
+    uint8_t volume;
+    uint8_t i;
+    uint8_t j;
+
+    tonewheels_init();
+
+    for (i=0; i<NUM_KEYS; i++) {
+        if (!active_keys[i])
+            continue;
+
+        for (j=0; j<NUM_DRAWBARS; j++) {
+            tonewheel = get_drawbar_tonewheel(i, j);
+            volume = tonewheel_volumes[tonewheel] + drawbar_positions[j];
+
+            /* attempt to minimize clipping by setting a maximum volume */
+            if (volume > MAX_TONEWHEEL_VOLUME) {
+                volume = MAX_TONEWHEEL_VOLUME;
+            }
+
+            tonewheel_volumes[tonewheel] = volume;
+        }
     }
 }
 
@@ -228,21 +261,11 @@ void tonewheels_key_down(uint8_t key) {
 
     if (!active_keys[key]) {
         active_keys[key] = 1;
-        tonewheels_add_key_drawbars(key);
+        tonewheels_scan_active_keys();
     }
 
     /* compact the list of active tonewheels */
     tonewheels_rescan_active();
-}
-
-static void tonewheels_sub_key_drawbars(uint8_t key) {
-    uint8_t i;
-    uint8_t tonewheel;
-
-    for (i=0; i<9; i++) {
-        tonewheel = get_drawbar_tonewheel(key, i);
-        tonewheel_volumes[tonewheel] -= drawbar_positions[i];
-    }
 }
 
 void tonewheels_key_up(uint8_t key) {
@@ -252,7 +275,7 @@ void tonewheels_key_up(uint8_t key) {
 
     if (active_keys[key]) {
         active_keys[key] = 0;
-        tonewheels_sub_key_drawbars(key);
+        tonewheels_scan_active_keys();
     }
 
     /* compact the list of active tonewheels */
@@ -262,7 +285,7 @@ void tonewheels_key_up(uint8_t key) {
 void tonewheels_set_drawbar(uint8_t drawbar, uint8_t value) {
     uint8_t i;
 
-    if (drawbar > 9) {
+    if (drawbar > NUM_DRAWBARS) {
         return;
     }
 
