@@ -138,9 +138,31 @@ static const uint8_t sine[] = {
     0x74, 0x77, 0x7A, 0x7D
 };
 
-static uint8_t drawbar_positions[] = { 8, 8, 8, 0, 0, 0, 0, 0, 0 };
+/* Current drawbar position (0..8) for each of the 9 drawbars. */
+static uint8_t drawbar_position[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-/* 16' (lower fundamental)
+/* Current gain contributed by each drawbar (Q4.4 format) */
+static uint8_t drawbar_gain[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+/* Map drawbar position (0..8) to the gain specified by that
+ * position. This is in Q4.4 format, in 3dB increments.
+ *
+ * position | gain  | Q4.4 gain
+ * 0        | 0     | 0
+ * 1        | 1.414 | 23
+ * 2        | 2     | 32
+ * 3        | 2.828 | 45
+ * 4        | 4     | 64
+ * 5        | 5.657 | 91
+ * 6        | 8     | 128
+ * 7        | 11.31 | 181
+ * 8        | 16    | 255
+ */
+static uint8_t drawbar_position_to_gain[] = { 0, 23, 32, 45, 64, 91, 128, 181, 255 };
+
+/* Drawbar harmonics, used in get_drawbar_tonewheel()
+ *
+ * 16' (lower fundamental)
  * 5 1/3' (lower 3rd fundamental)
  * 8' (fundamental),
  * 4' (first even harmonic),
@@ -167,7 +189,7 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t len) {
 
     while ((wheel = *(active++))) {
         pos = tonewheel_positions[wheel];
-        vol = tonewheel_volumes[wheel];
+        vol = tonewheel_volumes[wheel] >> 4; /* convert from Q4.4 */
         rate = tonewheel_rates[wheel];
 
         for (i=0; i<len; i++) {
@@ -217,13 +239,21 @@ static void tonewheels_rescan_active() {
 static void tonewheels_add_key_drawbars(uint8_t key) {
     uint8_t i;
     uint8_t tonewheel;
+    uint8_t prev_volume;
     uint8_t volume;
 
     for (i=0; i<NUM_DRAWBARS; i++) {
         tonewheel = get_drawbar_tonewheel(key, i);
-        volume = tonewheel_volumes[tonewheel] + drawbar_positions[i];
+        prev_volume = tonewheel_volumes[tonewheel];
+        volume = prev_volume + drawbar_gain[i];
 
-        tonewheel_volumes[tonewheel] = min(volume, 8);
+        /* Check for overflow, constrain to 255. Since volume is in Q4.4
+         * format, this leaves us with a gain of 15.9 (about 16). */
+        if (volume < prev_volume) {
+            volume = 255;
+        }
+
+        tonewheel_volumes[tonewheel] = volume;
     }
 }
 
@@ -240,17 +270,7 @@ void tonewheels_scan_active_keys() {
         if (!active_keys[i])
             continue;
 
-        for (j=0; j<NUM_DRAWBARS; j++) {
-            tonewheel = get_drawbar_tonewheel(i, j);
-            volume = tonewheel_volumes[tonewheel] + drawbar_positions[j];
-
-            /* attempt to minimize clipping by setting a maximum volume */
-            if (volume > MAX_TONEWHEEL_VOLUME) {
-                volume = MAX_TONEWHEEL_VOLUME;
-            }
-
-            tonewheel_volumes[tonewheel] = volume;
-        }
+        tonewheels_add_key_drawbars(i);
     }
 }
 
@@ -289,7 +309,14 @@ void tonewheels_set_drawbar(uint8_t drawbar, uint8_t value) {
         return;
     }
 
-    drawbar_positions[drawbar-1] = value;
+    if (value > 8) {
+        return;
+    }
+
+    drawbar = drawbar - 1;
+
+    drawbar_position[drawbar] = value;
+    drawbar_gain[drawbar] = drawbar_position_to_gain[value];
 
     /* zero out the active tonewheels and recreate them from active keys */
     tonewheels_init();
