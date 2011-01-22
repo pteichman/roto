@@ -109,6 +109,11 @@ void setup() {
     tonewheels_sample_v(&buffer2[0], BUFFER_LEN);
     cur = &buffer1[0];
 
+    /* set default drawbar volumes to 888000000 */
+    midi.handleControlChange(0, 110, 0);
+    midi.handleControlChange(0, 111, 0);
+    midi.handleControlChange(0, 112, 0);
+
     sei();
 }
 
