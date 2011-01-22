@@ -27,7 +27,28 @@ class RotoMidi : public Midi {
         /* map MIDI CC# 110-118 to drawbars */
         uint8_t drawbar = controller - 109;
 
-        tonewheels_set_drawbar(drawbar, (127-value) >> 3);
+        /* invert value and convert it to drawbar settings 0..8 */
+        if (value > 112) {
+            value = 0;
+        } else if (value > 98) {
+            value = 1;
+        } else if (value > 84) {
+            value = 2;
+        } else if (value > 70) {
+            value = 3;
+        } else if (value > 56) {
+            value = 4;
+        } else if (value > 42) {
+            value = 5;
+        } else if (value > 28) {
+            value = 6;
+        } else if (value > 14) {
+            value = 7;
+        } else {
+            value = 8;
+        }
+
+        tonewheels_set_drawbar(drawbar, value);
     }
 
     void handleNoteOn(unsigned int channel, unsigned int note,
