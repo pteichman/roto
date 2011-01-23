@@ -76,7 +76,7 @@ class RotoMidi : public Midi {
 
  private:
     uint8_t midiNoteToKey(unsigned int note) {
-        return note - 12;
+        return note - 11;
     }
 };
 

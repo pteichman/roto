@@ -4,7 +4,9 @@
    real-life tonewheel numbering */
 #define NUM_TONEWHEELS (92)
 #define NUM_DRAWBARS (9)
-#define NUM_KEYS (61)
+
+/* 61 keys, plus one for 1-indexing */
+#define NUM_KEYS (62)
 
 #define MAX_TONEWHEEL_VOLUME (16)
 
@@ -275,7 +277,7 @@ void tonewheels_scan_active_keys() {
 }
 
 void tonewheels_key_down(uint8_t key) {
-    if (key > NUM_KEYS-1) {
+    if (key == 0 || key > NUM_KEYS) {
         return;
     }
 
@@ -289,7 +291,7 @@ void tonewheels_key_down(uint8_t key) {
 }
 
 void tonewheels_key_up(uint8_t key) {
-    if (key > NUM_KEYS-1) {
+    if (key == 0 || key > NUM_KEYS) {
         return;
     }
 
