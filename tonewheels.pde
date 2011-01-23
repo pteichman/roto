@@ -188,6 +188,7 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t len) {
     uint8_t wheel, vol;
     uint8_t i;
     uint8_t *active = active_tonewheels;
+    uint8_t sample;
 
     while ((wheel = *(active++))) {
         pos = tonewheel_positions[wheel];
@@ -196,7 +197,15 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t len) {
 
         for (i=0; i<len; i++) {
             pos += rate;
-            samples[i] += sine[pos >> 8] * vol;
+
+            /* mimic the complex tone of the lower tonewheels */
+            if (wheel < 13) {
+                sample = (pos & 0b10000000) ? 0xFF : 0x00;
+            } else {
+                sample = sine[pos >> 8];
+            }
+
+            samples[i] += sample * vol;
         }
 
         tonewheel_positions[wheel] = pos;
