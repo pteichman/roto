@@ -18,6 +18,21 @@ static uint8_t active_tonewheels[NUM_TONEWHEELS];
 
 static uint8_t active_keys[NUM_KEYS];
 
+/* Tonewheel voltages taken from the "Old Graph #1" list here:
+ * http://www.dairiki.org/HammondWiki/ToneWheelGeneratorOutputLevels.
+ * Using Q2.6. */
+static const uint8_t base_tonewheel_volumes[NUM_TONEWHEELS] = {
+    0,
+    211, 212, 214, 214, 216, 217, 218, 218, 219, 220, 220, 220, /*  1-12 */
+    220, 220, 219, 218, 218, 217, 216, 214, 212, 211, 210, 207, /* 13-24 */
+    205, 202, 198, 195, 192, 186, 180, 173, 170, 163, 157, 150, /* 25-36 */
+    141, 133, 125, 119, 113, 108, 100, 97, 92, 87, 83, 80,      /* 37-48 */
+    76, 74, 72, 70, 68, 68, 67, 67, 66, 64, 63, 61,             /* 49-60 */
+    60, 58, 55, 52, 50, 47, 45, 43, 42, 39, 38, 37,             /* 61-72 */
+    36, 35, 33, 32, 32, 32, 31, 31, 31, 31, 30, 29,             /* 73-84 */
+    29, 28, 27, 26, 23, 21, 19
+};
+
 /* Calculated from http://www.goodeveca.net/RotorOrgan/ToneWheelSpec.html,
  * given a 15625Hz timer. Each rate is (15625 * freq) >> 12. */
 static const uint16_t tonewheel_rates[] = {
@@ -192,8 +207,11 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t len) {
 
     while ((wheel = *(active++))) {
         pos = tonewheel_positions[wheel];
-        vol = tonewheel_volumes[wheel] >> 4; /* convert from Q4.4 */
         rate = tonewheel_rates[wheel];
+
+        /* Q4.4 * Q2.6, so shift by 10 */
+        vol = ((uint16_t) tonewheel_volumes[wheel]
+               * base_tonewheel_volumes[wheel]) >> 10;
 
         for (i=0; i<len; i++) {
             pos += rate;
