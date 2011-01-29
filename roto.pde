@@ -118,17 +118,25 @@ ISR(TIMER2_COMPA_vect) {
 
     PORTB |= (1<<1);
 
-    /* Clear the sample we just played, and increment the pointer. */
-    *cur++ = 0;
+    /* move to the next sample */
+    *cur++;
 
     if (cur == &buffer1[BUFFER_LEN]) {
-        /* regenerate the first buffer once we're through with it */
-        gen_buffer1 = true;
-        cur = &buffer2[0];
+        if (gen_buffer2) {
+            /* if we're still regenerating buffer2, replay buffer1 */
+            cur = buffer1;
+        } else {
+            /* play buffer2, regenerate buffer1 */
+            gen_buffer1 = true;
+            cur = buffer2;
+        }
     } else if (cur == &buffer2[BUFFER_LEN]) {
-        /* regenerate the second buffer */
-        gen_buffer2 = true;
-        cur = &buffer1[0];
+        if (gen_buffer1) {
+            cur = buffer2;
+        } else {
+            gen_buffer2 = true;
+            cur = buffer1;
+        }
     }
 }
 

@@ -190,6 +190,11 @@ void tonewheels_sample_v(uint16_t *samples, uint8_t len) {
     uint8_t *active = active_tonewheels;
     uint8_t sample;
 
+    /* clear the samples */
+    for (i=0; i<len; i++) {
+        samples[i] = 0;
+    }
+
     while ((wheel = *(active++))) {
         pos = tonewheel_positions[wheel];
         vol = tonewheel_volumes[wheel] >> 4; /* convert from Q4.4 */
