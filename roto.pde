@@ -8,10 +8,10 @@
 
 #define BUFFER_LEN 128
 
-uint16_t buffer1[BUFFER_LEN];
-uint16_t buffer2[BUFFER_LEN];
-uint16_t *cur = 0;
-uint16_t cur_sample;
+int16_t buffer1[BUFFER_LEN];
+int16_t buffer2[BUFFER_LEN];
+int16_t *cur = 0;
+int16_t cur_sample;
 
 volatile boolean gen_buffer1;
 volatile boolean gen_buffer2;
@@ -107,13 +107,16 @@ ISR(TIMER2_COMPA_vect) {
 
     cur_sample = *cur >> 4;
 
+    /* convert from signed 11-bit to unsigned 12-bit for the DAC */
+    uint16_t sample = cur_sample + 0x800;
+
     PORTB &= ~(1<<1);
 
     /* buffered, 1x gain, active mode */
-    SPDR = highByte(cur_sample) | 0x70;
+    SPDR = highByte(sample) | 0x70;
     while (!(SPSR & (1<<SPIF)));
 
-    SPDR = lowByte(cur_sample);
+    SPDR = lowByte(sample);
     while (!(SPSR & (1<<SPIF)));
 
     PORTB |= (1<<1);
