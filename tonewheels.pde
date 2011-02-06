@@ -147,24 +147,24 @@ static const int8_t sine[] = {
 /* Current drawbar position (0..8) for each of the 9 drawbars. */
 static uint8_t drawbar_position[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-/* Current gain contributed by each drawbar (Q4.4 format) */
+/* Current gain contributed by each drawbar (Q4.3 format) */
 static uint8_t drawbar_gain[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 /* Map drawbar position (0..8) to the gain specified by that
- * position. This is in Q4.4 format, in 3dB increments.
+ * position. This is in Q4.3 format, in 3dB increments.
  *
- * position | gain  | Q4.4 gain
+ * position | gain  | Q4.3 gain
  * 0        | 0     | 0
- * 1        | 1.414 | 23
- * 2        | 2     | 32
- * 3        | 2.828 | 45
- * 4        | 4     | 64
- * 5        | 5.657 | 91
- * 6        | 8     | 128
- * 7        | 11.31 | 181
- * 8        | 16    | 255
+ * 1        | 1.414 | 11
+ * 2        | 2     | 16
+ * 3        | 2.828 | 23
+ * 4        | 4     | 32
+ * 5        | 5.657 | 45
+ * 6        | 8     | 64
+ * 7        | 11.31 | 90
+ * 8        | 16    | 127
  */
-static uint8_t drawbar_position_to_gain[] = { 0, 23, 32, 45, 64, 91, 128, 181, 255 };
+static uint8_t drawbar_position_to_gain[] = { 0, 11, 16, 23, 32, 45, 64, 90, 127 };
 
 /* Drawbar harmonics, used in get_drawbar_tonewheel()
  *
@@ -267,10 +267,10 @@ static void tonewheels_add_key_drawbars(uint8_t key) {
         prev_volume = tonewheel_volumes[tonewheel];
         volume = prev_volume + drawbar_gain[i];
 
-        /* Check for overflow, constrain to 255. Since volume is in Q4.4
+        /* Check for overflow, constrain to 127. Since volume is in Q4.3
          * format, this leaves us with a gain of 15.9 (about 16). */
         if (volume < prev_volume) {
-            volume = 255;
+            volume = 127;
         }
 
         tonewheel_volumes[tonewheel] = volume;
