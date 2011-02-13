@@ -82,7 +82,7 @@ void setup() {
 
     /* clear/reset timer on match */
     TCCR2A = 1<<WGM21 | 0<<WGM20; /* CTC mode, reset on match */
-    TCCR2B = 0<<CS22 | 1<<CS21 | 0<<CS20; /* clk, no prescaler */
+    TCCR2B = 0<<CS22 | 1<<CS21 | 0<<CS20; /* clk, /8 prescaler */
 
     SPCR = 0x50;
     SPSR = 0x01;
