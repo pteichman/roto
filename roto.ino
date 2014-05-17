@@ -1,6 +1,7 @@
 /* Copyright (c) 2011 Peter Teichman */
 
-#include <Midi.h>
+#include <Arduino.h>
+#include <MIDI.h>
 
 #undef ROTO_TEST_TONES
 
@@ -18,57 +19,47 @@ volatile boolean gen_buffer2;
 
 uint8_t num_keys_down=0;
 
-class RotoMidi : public Midi {
- public:
- RotoMidi(HardwareSerial &s) : Midi(s) { }
+void handleControlChange(byte channel, byte controller, byte value) {
+    /* map MIDI CC# 110-118 to drawbars */
+    uint8_t drawbar = controller - 109;
 
-    void handleControlChange(unsigned int channel, unsigned int controller,
-                             unsigned int value) {
-        /* map MIDI CC# 110-118 to drawbars */
-        uint8_t drawbar = controller - 109;
+    /* invert value and convert it to drawbar settings 0..8. Invert to
+     * match organ behavior, where pulling a drawbar closer raises its
+     * volume. This might not be appropriate on all keyboards. */
+    value = map(127-value, 0, 127, 0, 8);
 
-        /* invert value and convert it to drawbar settings 0..8. Invert to
-         * match organ behavior, where pulling a drawbar closer raises its
-         * volume. This might not be appropriate on all keyboards. */
-        value = map(127-value, 0, 127, 0, 8);
+    tonewheels_set_drawbar(drawbar, value);
+}
 
-        tonewheels_set_drawbar(drawbar, value);
+void handleNoteOn(byte channel, byte note, byte velocity) {
+    uint8_t key = midiNoteToKey(note);
+
+    tonewheels_key_down(key);
+    num_keys_down++;
+    bitWrite(PORTD, 7, 1);
+}
+
+void handleNoteOff(byte channel, byte note, byte velocity) {
+    uint8_t key = midiNoteToKey(note);
+
+    tonewheels_key_up(key);
+    num_keys_down--;
+    if (num_keys_down == 0) {
+        bitWrite(PORTD, 7, 0);
+        /* Clear all tonewheels when the last key is released. This
+         * is a workaround until live drawbar changes are supported. */
+        tonewheels_init();
     }
+}
 
-    void handleNoteOn(unsigned int channel, unsigned int note,
-                      unsigned int velocity) {
-        uint8_t key = midiNoteToKey(note);
-
-        tonewheels_key_down(key);
-        num_keys_down++;
-        bitWrite(PORTD, 7, 1);
-    }
-
-    void handleNoteOff(unsigned int channel, unsigned int note,
-                       unsigned int velocity) {
-        uint8_t key = midiNoteToKey(note);
-
-        tonewheels_key_up(key);
-        num_keys_down--;
-        if (num_keys_down == 0) {
-            bitWrite(PORTD, 7, 0);
-            /* Clear all tonewheels when the last key is released. This
-             * is a workaround until live drawbar changes are supported. */
-            tonewheels_init();
-        }
-    }
-
- private:
-    uint8_t midiNoteToKey(unsigned int note) {
-        return note - 11;
-    }
-};
-
-RotoMidi midi(Serial);
+uint8_t midiNoteToKey(unsigned int note) {
+    return note - 11;
+}
 
 void setup() {
     tonewheels_init();
-    midi.begin(0);
+    MIDI.begin(0);
+    MIDI.setHandleControlChange(handleControlChange);
 
     /* MidiVox DATA LED */
     pinMode(7, OUTPUT);
@@ -76,7 +67,7 @@ void setup() {
     cli();
 
     /* Enable interrupt on timer2 == 127, with clk/8 prescaler. At 16MHz,
-       this gives a timer interrupt at 15625Hz. */
+     this gives a timer interrupt at 15625Hz. */
     TIMSK2 = (1 << OCIE2A);
     OCR2A = 127;
 
@@ -94,9 +85,9 @@ void setup() {
     cur = &buffer1[0];
 
     /* set default drawbar volumes to 888000000 */
-    midi.handleControlChange(0, 110, 0);
-    midi.handleControlChange(0, 111, 0);
-    midi.handleControlChange(0, 112, 0);
+    handleControlChange(0, 110, 0);
+    handleControlChange(0, 111, 0);
+    handleControlChange(0, 112, 0);
 
     sei();
 }
@@ -157,7 +148,7 @@ void loop() {
         gen_buffer2 = false;
     }
 
-    midi.poll();
+    MIDI.read();
 
 #ifdef ROTO_TEST_TONES
     uint16_t now = millis();
@@ -166,16 +157,17 @@ void loop() {
         playing = !playing;
 
         if (playing) {
-            midi.handleNoteOn(1, 48, 1);
-            midi.handleNoteOn(1, 52, 1);
-            midi.handleNoteOn(1, 55, 1);
-            midi.handleNoteOn(1, 58, 1);
+            handleNoteOn(1, 48, 1);
+            handleNoteOn(1, 52, 1);
+            handleNoteOn(1, 55, 1);
+            handleNoteOn(1, 58, 1);
         } else {
-            midi.handleNoteOff(1, 48, 1);
-            midi.handleNoteOff(1, 52, 1);
-            midi.handleNoteOff(1, 55, 1);
-            midi.handleNoteOff(1, 58, 1);
+            handleNoteOff(1, 48, 1);
+            handleNoteOff(1, 52, 1);
+            handleNoteOff(1, 55, 1);
+            handleNoteOff(1, 58, 1);
         }
     }
 #endif
 }
+

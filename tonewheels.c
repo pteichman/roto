@@ -1,5 +1,7 @@
 /* Copyright (c) 2011 Peter Teichman */
 
+#include "tonewheels.h"
+
 /* 91 tonewheels, plus one so arrays can be 1-indexed and use
    real-life tonewheel numbering */
 #define NUM_TONEWHEELS (92)
