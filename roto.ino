@@ -7,6 +7,8 @@
 
 #include "tonewheels.h"
 
+MIDI_CREATE_DEFAULT_INSTANCE();
+
 #define BUFFER_LEN 128
 
 int16_t buffer1[BUFFER_LEN];
