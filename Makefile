@@ -29,5 +29,8 @@ roto.test: $(ROTO_TEST_OBJS)
 test: roto.test
 	./roto.test
 
+fmt:
+	clang-format -i $(SOURCES)
+
 clean:
 	rm -f $(ROTO_TEST_OBJS) roto.test

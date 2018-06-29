@@ -111,8 +111,8 @@ float freqs[92] = {
 tonewheel_osc *tonewheel_osc_new() {
     tonewheel_osc *ret = (tonewheel_osc *)calloc(1, sizeof(tonewheel_osc));
 
-    for (int i=0; i<92; i++) {
-	ret->phase_incrs[i] = freq_incr32(freqs[i]);
+    for (int i = 0; i < 92; i++) {
+        ret->phase_incrs[i] = freq_incr32(freqs[i]);
     }
 
     return ret;
@@ -132,7 +132,7 @@ uint32_t freq_incr15(float freq) {
 
 void tonewheel_osc_set_volume(tonewheel_osc *osc, uint8_t tonewheel, uint8_t volume) {
     if (tonewheel > 0 && tonewheel < 92) {
-	osc->volumes[tonewheel] = volume;
+        osc->volumes[tonewheel] = volume;
     }
 }
 
@@ -143,34 +143,33 @@ int8_t lookup(int8_t *table, uint32_t phase) {
 }
 
 void tonewheel_osc_fill(tonewheel_osc *osc, int16_t *block, size_t block_len) {
-    memset(block, 0, sizeof(int16_t)*block_len);
+    memset(block, 0, sizeof(int16_t) * block_len);
 
     uint32_t phase;
     uint32_t phase_incr;
     uint8_t volume;
 
-    for (int i=0; i<92; i++) {
-	phase = osc->phases[i];
-	phase_incr = freq_incr15(freqs[i]);
-	volume = osc->volumes[i];
+    for (int i = 0; i < 92; i++) {
+        phase = osc->phases[i];
+        phase_incr = freq_incr15(freqs[i]);
+        volume = osc->volumes[i];
 
-	if (volume == 0) {
-	    continue;
-	}
+        if (volume == 0) {
+            continue;
+        }
 
-	for (int j=0; j<block_len; j++) {
-	    phase += phase_incr;
-	    block[j] += (int16_t)isin_S4(phase);
-	}
-	osc->phases[i] = phase;
+        for (int j = 0; j < block_len; j++) {
+            phase += phase_incr;
+            block[j] += (int16_t)isin_S4(phase);
+        }
+        osc->phases[i] = phase;
     }
 }
 
 /// A sine approximation via a third-order approx.
 /// @param x    Angle (with 2^15 units/circle)
 /// @return     Sine value (Q12)
-int32_t isin_S3(int32_t x)
-{
+int32_t isin_S3(int32_t x) {
     // S(x) = x * ( (3<<p) - (x*x>>r) ) >> s
     // n : Q-pos for quarter circle             13
     // A : Q-pos for output                     12
@@ -178,37 +177,36 @@ int32_t isin_S3(int32_t x)
     // r = 2n-p                                 11
     // s = A-1-p-n                              17
 
-    static const int qN = 13, qA= 12, qP= 15, qR= 2*qN-qP, qS= qN+qP+1-qA;
+    static const int qN = 13, qA = 12, qP = 15, qR = 2 * qN - qP, qS = qN + qP + 1 - qA;
 
-    x= x<<(30-qN);          // shift to full s32 range (Q13->Q30)
+    x = x << (30 - qN); // shift to full s32 range (Q13->Q30)
 
-    if( (x^(x<<1)) < 0)     // test for quadrant 1 or 2
-        x= (1<<31) - x;
+    if ((x ^ (x << 1)) < 0) // test for quadrant 1 or 2
+        x = (1 << 31) - x;
 
-    x= x>>(30-qN);
+    x = x >> (30 - qN);
 
-    return x * ( (3<<qP) - (x*x>>qR) ) >> qS;
+    return x * ((3 << qP) - (x * x >> qR)) >> qS;
 }
 
 /// A sine approximation via a fourth-order cosine approx.
 /// @param x   angle (with 2^15 units/circle)
 /// @return     Sine value (Q12)
-int32_t isin_S4(int32_t x)
-{
+int32_t isin_S4(int32_t x) {
     int c, x2, y;
-    static const int qN= 13, qA= 12, B=19900, C=3516;
+    static const int qN = 13, qA = 12, B = 19900, C = 3516;
 
-    c= x<<(30-qN);              // Semi-circle info into carry.
-    x -= 1<<qN;                 // sine -> cosine calc
+    c = x << (30 - qN); // Semi-circle info into carry.
+    x -= 1 << qN;       // sine -> cosine calc
 
-    x= x<<(31-qN);              // Mask with PI
-    x= x>>(31-qN);              // Note: SIGNED shift! (to qN)
-    x= x*x>>(2*qN-14);          // x=x^2 To Q14
+    x = x << (31 - qN);         // Mask with PI
+    x = x >> (31 - qN);         // Note: SIGNED shift! (to qN)
+    x = x * x >> (2 * qN - 14); // x=x^2 To Q14
 
-    y= B - (x*C>>14);           // B - x^2*C
-    y= (1<<qA)-(x*y>>16);       // A - x^2*(B-x^2*C)
+    y = B - (x * C >> 14);         // B - x^2*C
+    y = (1 << qA) - (x * y >> 16); // A - x^2*(B-x^2*C)
 
-    return c>=0 ? y : -y;
+    return c >= 0 ? y : -y;
 }
 
 } // end extern "C"

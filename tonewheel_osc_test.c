@@ -10,9 +10,9 @@ TEST test_tonewheel_osc_new() {
     tonewheel_osc *osc = tonewheel_osc_new();
 
     ASSERT_EQ_FMT(0, osc->phase_incrs[0], "%d");
-    for (int i=0; i<92; i++) {
-	ASSERT_EQ_FMT(0, osc->phases[i], "%d");
-	ASSERT_EQ_FMT(0, osc->volumes[i], "%d");
+    for (int i = 0; i < 92; i++) {
+        ASSERT_EQ_FMT(0, osc->phases[i], "%d");
+        ASSERT_EQ_FMT(0, osc->volumes[i], "%d");
     }
     free(osc);
     PASS();
@@ -37,7 +37,7 @@ TEST test_tonewheel_osc_fill1() {
     want[8] = 0x089a;
     want[9] = 0x096f;
 
-    ASSERT_MEM_EQ(want, block, 10*sizeof(int16_t));
+    ASSERT_MEM_EQ(want, block, 10 * sizeof(int16_t));
 
     free(osc);
     PASS();
