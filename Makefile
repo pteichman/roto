@@ -18,7 +18,7 @@ AO_CFLAGS=`pkg-config --cflags ao`
 AO_LIBS=`pkg-config --libs ao`
 
 .c.o:
-	$(CXX) $(CFLAGS) -c -g -o $@ $<
+	$(CC) $(CFLAGS) -c -g -o $@ $<
 
 .cpp.o:
 	$(CXX) $(CFLAGS) -c -g -o $@ $<
