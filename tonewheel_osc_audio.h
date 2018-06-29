@@ -1,9 +1,13 @@
-#ifndef TONEWHEEL_OSC_H
-#define TONEWHEEL_OSC_H
+/* Copyright (c) 2018 Peter Teichman */
+
+#ifndef TONEWHEEL_OSC_AUDIO_H
+#define TONEWHEEL_OSC_AUDIO_H
 
 #include <Audio.h>
 #include "tonewheel_osc.h"
 
+// TonewheelOsc is a Teensy AudioStream wrapper around the
+// tonewheel_osc oscillator block.
 class TonewheelOsc : public AudioStream {
   public:
     TonewheelOsc() : AudioStream(0, NULL) {

@@ -1,6 +1,6 @@
-#ifdef ROTO_TEST
-
 /* Copyright (c) 2018 Peter Teichman */
+
+#ifdef ROTO_TEST
 
 #include "greatest.h"
 
