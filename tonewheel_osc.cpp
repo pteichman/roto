@@ -118,13 +118,8 @@ tonewheel_osc *tonewheel_osc_new() {
     return ret;
 };
 
-// freq_incr32 returns a 32-bit phase increment for freq at a sample
+// freq_incr15 returns a 15-bit phase increment for freq at a sample
 // rate of 44100kHz.
-uint32_t freq_incr32(float freq) {
-    // 1<<32 / 44100 = 97391.5
-    return (uint32_t)(freq * 97391.5 + 0.5);
-}
-
 uint32_t freq_incr15(float freq) {
     // 1<<15 / 44100 = 0.74304
     return (uint32_t)(freq * 0.74304 + 0.5);
@@ -134,12 +129,6 @@ void tonewheel_osc_set_volume(tonewheel_osc *osc, uint8_t tonewheel, uint8_t vol
     if (tonewheel > 0 && tonewheel < 92) {
         osc->volumes[tonewheel] = volume;
     }
-}
-
-int8_t lookup(int8_t *table, uint32_t phase) {
-    // Turn the phase into an 8-bit index.
-    int index = phase >> 24;
-    return table[index];
 }
 
 void tonewheel_osc_fill(tonewheel_osc *osc, int16_t *block, size_t block_len) {
