@@ -1,6 +1,8 @@
 /* Copyright (c) 2018 Peter Teichman */
 
+#if defined(__cplusplus)
 extern "C" {
+#endif
 
 #include <stdlib.h>
 #include <string.h>
@@ -198,4 +200,6 @@ int32_t isin_S4(int32_t x) {
     return c >= 0 ? y : -y;
 }
 
-} // end extern "C"
+#if defined(__cplusplus)
+}
+#endif
