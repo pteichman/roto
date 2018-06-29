@@ -7,7 +7,7 @@ extern "C" {
 
 #include "tonewheel_osc.h"
 
-uint32_t freq_incr32(float freq);
+uint32_t freq_incr15(float freq);
 int32_t isin_S3(int32_t x);
 int32_t isin_S4(int32_t x);
 
@@ -112,7 +112,7 @@ tonewheel_osc *tonewheel_osc_new() {
     tonewheel_osc *ret = (tonewheel_osc *)calloc(1, sizeof(tonewheel_osc));
 
     for (int i = 0; i < 92; i++) {
-        ret->phase_incrs[i] = freq_incr32(freqs[i]);
+        ret->phase_incrs[i] = freq_incr15(freqs[i]);
     }
 
     return ret;
@@ -151,7 +151,7 @@ void tonewheel_osc_fill(tonewheel_osc *osc, int16_t *block, size_t block_len) {
 
     for (int i = 0; i < 92; i++) {
         phase = osc->phases[i];
-        phase_incr = freq_incr15(freqs[i]);
+        phase_incr = osc->phase_incrs[i];
         volume = osc->volumes[i];
 
         if (volume == 0) {
