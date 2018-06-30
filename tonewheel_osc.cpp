@@ -230,6 +230,17 @@ void tonewheel_osc_set_volume(tonewheel_osc *osc, uint8_t tonewheel, uint8_t vol
     }
 }
 
+int foldback(uint8_t tonewheel) {
+    if (tonewheel < 13) {
+        tonewheel = tonewheel + 12;
+    } else if (tonewheel > 103) {
+        tonewheel = tonewheel - 24;
+    } else if (tonewheel > 91) {
+        tonewheel = tonewheel - 12;
+    }
+    return tonewheel;
+}
+
 void tonewheel_osc_fill(tonewheel_osc *osc, int16_t *block, size_t block_len) {
     memset(block, 0, sizeof(int16_t) * block_len);
 
