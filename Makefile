@@ -1,6 +1,9 @@
 .PHONY: all clean test fmt
 
 SOURCES = \
+	manual.cpp \
+	manual.h \
+	manual_test.c \
 	roto.ino \
 	roto_test.c \
 	tonewheel_osc.cpp \
@@ -9,6 +12,8 @@ SOURCES = \
 	tonewheel_osc_test.c
 
 ROTO_TEST_OBJS = \
+	manual.o \
+	manual_test.o \
 	roto_test.o \
 	tonewheel_osc.o \
 	tonewheel_osc_test.o

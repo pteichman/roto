@@ -4,6 +4,7 @@
 
 #include "greatest.h"
 
+extern SUITE(manual_suite);
 extern SUITE(tonewheel_osc_suite);
 
 GREATEST_MAIN_DEFS();
@@ -11,6 +12,7 @@ GREATEST_MAIN_DEFS();
 int main(int argc, char **argv) {
     GREATEST_MAIN_BEGIN();
 
+    RUN_SUITE(manual_suite);
     RUN_SUITE(tonewheel_osc_suite);
 
     GREATEST_MAIN_END();
