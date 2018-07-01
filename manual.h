@@ -18,6 +18,7 @@ typedef struct _manual {
 } manual;
 
 int foldback(uint8_t tonewheel);
+int tonewheel(int key, int drawbar);
 
 #if defined(__cplusplus)
 }

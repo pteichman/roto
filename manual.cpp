@@ -31,6 +31,32 @@ int foldback(uint8_t tonewheel) {
     return tonewheel;
 }
 
+// tonewheel returns the number of the tonewheel connected to _key_ at
+// _drawbar_.
+int tonewheel(int key, int drawbar) {
+    switch (drawbar) {
+    case 1: // Sub-octave; 16'
+        return foldback(key);
+    case 2: // 5th; 5 1/3'
+        return foldback(key + 19);
+    case 3: // Unison; 8'
+        return foldback(key + 12);
+    case 4: // 8th (Octave); 4'
+        return foldback(key + 24);
+    case 5: // 12th; 2 2/3'
+        return foldback(key + 31);
+    case 6: // 15th; 2'
+        return foldback(key + 36);
+    case 7: // 17th; 1 3/5'
+        return foldback(key + 40);
+    case 8: // 19th; 1 1/3'
+        return foldback(key + 43);
+    case 9: // 22nd; 1'
+        return foldback(key + 48);
+    }
+    return 0;
+}
+
 // manual_set_drawbars adjusts the drawbar settings on a manual.
 // drawbars contains 9 integers in the 0..9 range.
 void manual_set_drawbars(manual *m, uint8_t drawbars[9]) {
@@ -43,9 +69,14 @@ void manual_set_keys(manual *m, uint8_t keys[61]) {
     memcpy(m->keys, keys, 61);
 }
 
-// manual_fill_volumes returns the current set of tonewheel volumes
-// in Q14 format.
+// manual_fill_volumes returns the current set of tonewheel volumes,
+// measured in mA.
 void manual_fill_volumes(manual *m, uint16_t volumes[92]) {
+    // tonewheel t; key k; drawbar d.
+    for (int t = 0; t < 92; t++) {
+        for (int k = 0; k < 62; k++) {
+        }
+    }
 }
 
 #if defined(__cplusplus)
