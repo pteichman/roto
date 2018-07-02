@@ -4,8 +4,6 @@
 extern "C" {
 #endif
 
-#include <string.h>
-
 #include "manual.h"
 
 // manual is here to maintain the mapping between physical keys on the
@@ -16,6 +14,36 @@ extern "C" {
 // resistances of each wiring between keys and tonewheels, the
 // resistances of each drawbar setting, and the factory recommended
 // voltage from each tonewheel.
+
+// resistance & friends return the resistance of the wire (in ohms)
+// connected to the tonewheel for key + drawbar.
+float resistance(int key, int drawbar);
+float resistance1(int key);
+float resistance2(int key);
+float resistance3(int key);
+float resistance4(int key);
+float resistance5(int key);
+float resistance6(int key);
+float resistance7(int key);
+float resistance8(int key);
+float resistance9(int key);
+
+// voltages taken from the "Post 1956 TG" table at HammondWiki. Using
+// the Vpp levels, which feels right given that we're adding peak to
+// peak volumes, but my EE memory is hazy here.
+// http://www.dairiki.org/HammondWiki/ToneWheelGeneratorOutputLevels
+float voltages[92] = {
+    // Add an empty first element so voltages can be 1-indexed.
+    0,
+    70.0, 69.2, 68.3, 67.3, 66.4, 65.5, 64.5, 63.6, 62.6, 61.7, 60.8, 60.0,
+    15.0, 14.6, 14.3, 14.0, 13.6, 13.3, 13.0, 12.6, 12.3, 12.0, 11.6, 11.3,
+    11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0,
+    11.1, 11.2, 11.3, 11.4, 11.5, 11.7, 11.8, 12.0, 12.2, 12.5, 12.8, 13.0,
+    13.2, 13.4, 13.6, 14.0, 14.2, 14.5, 14.7, 15.1, 15.2, 15.6, 15.8, 16.0,
+    16.3, 16.6, 17.0, 17.3, 17.7, 18.0, 18.5, 18.8, 19.2, 19.4, 19.6, 19.8,
+    20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0,
+    20.0, 19.7, 19.3, 19.0, 18.7, 18.3, 18.0,
+};
 
 // foldback wraps calculated tonewheel values outside of the keyboard
 // range (13..92) back into that range. The 1..13 tonewheels are
@@ -57,25 +85,188 @@ int tonewheel(int key, int drawbar) {
     return 0;
 }
 
-// manual_set_drawbars adjusts the drawbar settings on a manual.
-// drawbars contains 9 integers in the 0..9 range.
-void manual_set_drawbars(manual *m, uint8_t drawbars[9]) {
-    memcpy(m->drawbars, drawbars, 9);
+// resistance returns the resistance connected to _key_ at _drawbar_.
+float resistance(int key, int drawbar) {
+    switch (drawbar) {
+    case 1:
+        return resistance1(key);
+    case 2:
+        return resistance2(key);
+    case 3:
+        return resistance3(key);
+    case 4:
+        return resistance4(key);
+    case 5:
+        return resistance5(key);
+    case 6:
+        return resistance6(key);
+    case 7:
+        return resistance7(key);
+    case 8:
+        return resistance8(key);
+    case 9:
+        return resistance9(key);
+    }
+    return 0;
 }
 
-// manual_set_keys adjusts the keys currently pressed on a manual.
-// keys contains 61 integers, nonzero if pressed.
-void manual_set_keys(manual *m, uint8_t keys[61]) {
-    memcpy(m->keys, keys, 61);
+float resistance1(int key) {
+    if (key < 11) {
+        return 100;
+    } else if (key < 17) {
+        return 50;
+    } else if (key < 25) {
+        return 34;
+    } else if (key < 37) {
+        return 24;
+    } else if (key < 49) {
+        return 15;
+    } else {
+        return 10;
+    }
+}
+
+float resistance2(int key) {
+    if (key < 15) {
+        return 34;
+    } else if (key < 39) {
+        return 24;
+    } else if (key < 15) {
+        return 15;
+    } else {
+        return 10;
+    }
+}
+
+float resistance3(int key) {
+    if (key < 16) {
+        return 50;
+    } else if (key < 24) {
+        return 34;
+    } else if (key < 38) {
+        return 24;
+    } else if (key < 50) {
+        return 15;
+    } else {
+        return 10;
+    }
+}
+
+float resistance4(int key) {
+    if (key < 14) {
+        return 34;
+    } else if (key < 40) {
+        return 24;
+    } else {
+        return 34;
+    }
+}
+
+float resistance5(int key) {
+    if (key < 13) {
+        return 10;
+    } else if (key < 21) {
+        return 15;
+    } else if (key < 41) {
+        return 24;
+    } else if (key < 53) {
+        return 34;
+    } else {
+        return 50;
+    }
+}
+
+float resistance6(int key) {
+    if (key < 12) {
+        return 10;
+    } else if (key < 21) {
+        return 15;
+    } else if (key < 42) {
+        return 24;
+    } else if (key < 56) {
+        return 34;
+    } else {
+        return 50;
+    }
+}
+
+float resistance7(int key) {
+    if (key < 19) {
+        return 10;
+    } else if (key < 43) {
+        return 24;
+    } else if (key < 52) {
+        return 34;
+    } else {
+        return 50;
+    }
+}
+
+float resistance8(int key) {
+    if (key < 44) {
+        return 24;
+    } else if (key < 49) {
+        return 34;
+    } else {
+        return 50;
+    }
+}
+
+float resistance9(int key) {
+    if (key < 44) {
+        return 24;
+    } else {
+        return 50;
+    }
 }
 
 // manual_fill_volumes returns the current set of tonewheel volumes,
-// measured in mA.
-void manual_fill_volumes(manual *m, uint16_t volumes[92]) {
-    // tonewheel t; key k; drawbar d.
-    for (int t = 0; t < 92; t++) {
-        for (int k = 0; k < 62; k++) {
+// with values in the Q14 range. keys is an array of 61 keys on a
+// manual, zero indexed and nonzero if pressed. drawbars contains the
+// resistance at each of the 9 drawbars, also zero indexed.
+//
+// drawbars[1]: 16' (sub-octave)
+// drawbars[2]: 5 1/3' (5th)
+// drawbars[3]: 8' (unison)
+// drawbars[4]: 4' (8th)
+// drawbars[5]: 2 2/3' (12th)
+// drawbars[6]: 2' (15th)
+// drawbars[7]: 1 3/5' (15th)
+// drawbars[8]: 1 1/3' (19th)
+// drawbars[9]: 1' (22nd)
+//
+// And here are the resistances at each drawbar stop:
+// 0: infinite (use something negative)
+// 1: 10kΩ
+// 2: 8.4kΩ
+// 3: 7.2kΩ
+// 4: 6.0kΩ
+// 5: 4.8kΩ
+// 6: 3.6kΩ
+// 7: 2.4kΩ
+// 8: 1.2kΩ
+// 9: 0Ω
+void manual_fill_volumes(uint8_t keys[62], float drawbars[10], uint16_t ret[92]) {
+    // invR is the inverse resistance connected from tonewheel t.
+    float invR[92] = {0};
+
+    for (int k = 1; k < 62; k++) {
+        if (keys[k] == 0) {
+            continue;
         }
+
+        for (int d = 1; d < 10; d++) {
+            if (drawbars[d] < 0) {
+                continue;
+            }
+
+            int t = tonewheel(k, d);
+            invR[t] += 1.0 / (resistance(k, d) + drawbars[d]);
+        }
+    }
+
+    for (int t = 1; t < 92; t++) {
+        ret[t] = (uint16_t)(voltages[t] * invR[t] * 1000);
     }
 }
 

@@ -17,6 +17,8 @@ typedef struct _manual {
     uint16_t output[92];
 } manual;
 
+void manual_fill_volumes(uint8_t keys[62], float drawbars[10], uint16_t ret[92]);
+
 int foldback(uint8_t tonewheel);
 int tonewheel(int key, int drawbar);
 

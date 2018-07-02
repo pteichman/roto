@@ -109,23 +109,6 @@ float freqs[92] = {
     5924.5714,
 };
 
-// volumes taken from the "Post 1956 TG" table at HammondWiki. Using
-// the Vpp levels, which feels right given that we're adding peak to
-// peak volumes, but my EE memory is hazy here.
-// http://www.dairiki.org/HammondWiki/ToneWheelGeneratorOutputLevels
-float volumes[92] = {
-    // Add an empty first element so volumes can be 1-indexed.
-    0,
-    70.0, 69.2, 68.3, 67.3, 66.4, 65.5, 64.5, 63.6, 62.6, 61.7, 60.8, 60.0,
-    15.0, 14.6, 14.3, 14.0, 13.6, 13.3, 13.0, 12.6, 12.3, 12.0, 11.6, 11.3,
-    11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0, 11.0,
-    11.1, 11.2, 11.3, 11.4, 11.5, 11.7, 11.8, 12.0, 12.2, 12.5, 12.8, 13.0,
-    13.2, 13.4, 13.6, 14.0, 14.2, 14.5, 14.7, 15.1, 15.2, 15.6, 15.8, 16.0,
-    16.3, 16.6, 17.0, 17.3, 17.7, 18.0, 18.5, 18.8, 19.2, 19.4, 19.6, 19.8,
-    20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0, 20.0,
-    20.0, 19.7, 19.3, 19.0, 18.7, 18.3, 18.0,
-};
-
 tonewheel_osc *tonewheel_osc_new() {
     tonewheel_osc *ret = (tonewheel_osc *)calloc(1, sizeof(tonewheel_osc));
 

@@ -31,6 +31,12 @@ class TonewheelOsc : public AudioStream {
         tonewheel_osc_set_volume(osc, tonewheel, volume);
     }
 
+    void setVolumes(uint16_t volumes[92]) {
+        for (int i = 1; i < 92; i++) {
+            tonewheel_osc_set_volume(osc, i, volumes[i] >> 6);
+        }
+    }
+
   private:
     tonewheel_osc *osc;
 };
