@@ -49,15 +49,15 @@ TEST test_manual_tonewheel() {
 
 TEST test_manual_fill_volumes() {
     uint8_t keys[62] = {0};
-    float drawbars[10] = {0};
+    uint8_t drawbars[10] = {0};
     uint16_t ret[92] = {0};
 
     keys[1] = 1;
     keys[3] = 1;
     keys[5] = 1;
-    drawbars[1] = 10000.0;
-    drawbars[3] = 1200.0;
-    drawbars[8] = 3600.0;
+    drawbars[1] = 8;
+    drawbars[3] = 8;
+    drawbars[8] = 8;
     manual_fill_volumes(keys, drawbars, ret);
 
     for (int i = 0; i < 92; i++) {

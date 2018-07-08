@@ -85,6 +85,18 @@ int tonewheel(int key, int drawbar) {
     return 0;
 }
 
+// drawbar_volume returns the volume multiplier for a drawbar set to
+// _value_. It's scaled such that each drawbar stop doubles the power
+// output, normalized to 0.0..1.0. Turns out this is value / 8.
+float drawbar_volume(uint8_t value) {
+    if (value > 8) {
+        return 0;
+    }
+
+    // (sqrt(2) * value) / (sqrt(2) * 8) = 0.125 * value
+    return 0.125 * (float)value;
+}
+
 // resistance returns the resistance connected to _key_ at _drawbar_.
 float resistance(int key, int drawbar) {
     switch (drawbar) {
@@ -234,19 +246,7 @@ float resistance9(int key) {
 // drawbars[7]: 1 3/5' (15th)
 // drawbars[8]: 1 1/3' (19th)
 // drawbars[9]: 1' (22nd)
-//
-// And here are the resistances at each drawbar stop:
-// 0: infinite (use something negative)
-// 1: 10kΩ
-// 2: 8.4kΩ
-// 3: 7.2kΩ
-// 4: 6.0kΩ
-// 5: 4.8kΩ
-// 6: 3.6kΩ
-// 7: 2.4kΩ
-// 8: 1.2kΩ
-// 9: 0Ω
-void manual_fill_volumes(uint8_t keys[62], float drawbars[10], uint16_t ret[92]) {
+void manual_fill_volumes(uint8_t keys[62], uint8_t drawbars[10], uint16_t ret[92]) {
     // invR is the inverse resistance connected from tonewheel t.
     float invR[92] = {0};
 
@@ -256,12 +256,12 @@ void manual_fill_volumes(uint8_t keys[62], float drawbars[10], uint16_t ret[92])
         }
 
         for (int d = 1; d < 10; d++) {
-            if (drawbars[d] < 0) {
+            if (drawbars[d] == 0) {
                 continue;
             }
 
             int t = tonewheel(k, d);
-            invR[t] += 1.0 / (resistance(k, d) + drawbars[d]);
+            invR[t] += drawbar_volume(drawbars[d]) / resistance(k, d);
         }
     }
 

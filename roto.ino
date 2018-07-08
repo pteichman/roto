@@ -19,7 +19,7 @@ AudioControlSGTL5000 audioShield;
 // GUItool: end automatically generated code
 
 uint8_t keys[62] = {0};
-float drawbars[10] = {0};
+uint8_t drawbars[10] = {0};
 uint16_t volumes[92] = {0};
 
 void handleNoteOn(byte chan, byte note, byte vel);
@@ -32,12 +32,10 @@ void setup() {
 
     tonewheels.init();
 
-    for (int i = 0; i < 10; i++) {
-        drawbars[i] = -1;
-    }
-    drawbars[3] = 0;
-    drawbars[5] = 0;
-    drawbars[8] = 0;
+    drawbars[1] = 8;
+    drawbars[2] = 8;
+    drawbars[3] = 8;
+    drawbars[4] = 8;
 
     antialias.setLowpass(0, 6000, 0.707);
 
@@ -47,8 +45,6 @@ void setup() {
     usbMIDI.begin();
     usbMIDI.setHandleNoteOn(handleNoteOn);
     usbMIDI.setHandleNoteOff(handleNoteOff);
-
-    handleNoteOn(0, 25, 100);
 }
 
 void loop() {
