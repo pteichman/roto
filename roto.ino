@@ -40,15 +40,19 @@ void setup() {
     antialias.setLowpass(0, 6000, 0.707);
 
     audioShield.enable();
-    audioShield.volume(0.6);
+    audioShield.volume(0.8);
 
     usbMIDI.begin();
     usbMIDI.setHandleNoteOn(handleNoteOn);
     usbMIDI.setHandleNoteOff(handleNoteOff);
 }
 
+int count = 0;
 void loop() {
     usbMIDI.read();
+    if ((count++ % 500000) == 0) {
+        usage();
+    }
 }
 
 int note2key(byte note) {
