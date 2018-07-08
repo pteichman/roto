@@ -16,6 +16,7 @@ class TonewheelOsc : public AudioStream {
     void init() {
         osc = tonewheel_osc_new();
     }
+
     void update() {
         audio_block_t *block;
         block = allocate();

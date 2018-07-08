@@ -40,7 +40,7 @@ void setup() {
     antialias.setLowpass(0, 6000, 0.707);
 
     audioShield.enable();
-    audioShield.volume(0.30);
+    audioShield.volume(0.6);
 
     usbMIDI.begin();
     usbMIDI.setHandleNoteOn(handleNoteOn);
@@ -53,6 +53,12 @@ void loop() {
 
 int note2key(byte note) {
     return (int)note - 35;
+}
+
+void fullPolyphony() {
+    for (int n = 0; n < 128; n++) {
+        handleNoteOn(1, n, 127);
+    }
 }
 
 void handleNoteOn(byte chan, byte note, byte vel) {
