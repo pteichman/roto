@@ -98,6 +98,8 @@ float drawbar_volume(uint8_t value) {
 }
 
 // resistance returns the resistance connected to _key_ at _drawbar_.
+// This implements the resistance tapering table here:
+// http://www.dairiki.org/HammondWiki/ManualTapering
 float resistance(int key, int drawbar) {
     switch (drawbar) {
     case 1:
