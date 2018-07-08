@@ -7,16 +7,14 @@
 #include "manual.h"
 #include "tonewheel_osc_audio.h"
 
-// GUItool: begin automatically generated code
-TonewheelOsc tonewheels; //xy=55,20
-AudioOutputI2S i2s1;     //xy=222,22
+TonewheelOsc tonewheels;
 AudioFilterBiquad antialias;
+AudioOutputI2S i2s1;
 
 AudioConnection patchCord0(tonewheels, 0, antialias, 0);
 AudioConnection patchCord1(antialias, 0, i2s1, 0);
 AudioConnection patchCord2(antialias, 0, i2s1, 1);
 AudioControlSGTL5000 audioShield;
-// GUItool: end automatically generated code
 
 uint8_t keys[62] = {0};
 uint8_t drawbars[10] = {0};
