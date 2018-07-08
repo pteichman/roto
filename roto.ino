@@ -8,14 +8,17 @@
 
 #include "manual.h"
 #include "tonewheel_osc_audio.h"
+#include "vibrato_audio.h"
 
 TonewheelOsc tonewheels;
+Vibrato vibrato;
 AudioFilterBiquad antialias;
 AudioOutputI2S i2s1;
 
-AudioConnection patchCord0(tonewheels, 0, antialias, 0);
-AudioConnection patchCord1(antialias, 0, i2s1, 0);
-AudioConnection patchCord2(antialias, 0, i2s1, 1);
+AudioConnection patchCord0(tonewheels, 0, vibrato, 0);
+AudioConnection patchCord1(vibrato, 0, antialias, 0);
+AudioConnection patchCord2(antialias, 0, i2s1, 0);
+AudioConnection patchCord3(antialias, 0, i2s1, 1);
 AudioControlSGTL5000 audioShield;
 
 uint8_t keys[62] = {0};
@@ -31,12 +34,14 @@ void setup() {
     AudioMemory(10);
 
     tonewheels.init();
+    vibrato.init();
 
     drawbars[1] = 8;
     drawbars[2] = 8;
     drawbars[3] = 8;
     drawbars[4] = 8;
 
+    vibrato.setMode(C3);
     antialias.setLowpass(0, 6000, 0.707);
 
     audioShield.enable();
@@ -121,6 +126,18 @@ void usage() {
     Serial.print(tonewheels.processorUsage());
     Serial.print(",");
     Serial.print(tonewheels.processorUsageMax());
+    Serial.print("  ");
+
+    Serial.print("vibrato=");
+    Serial.print(vibrato.processorUsage());
+    Serial.print(",");
+    Serial.print(vibrato.processorUsageMax());
+    Serial.print("  ");
+
+    Serial.print("antialias=");
+    Serial.print(antialias.processorUsage());
+    Serial.print(",");
+    Serial.print(antialias.processorUsageMax());
     Serial.print("  ");
 
     Serial.print("all=");
