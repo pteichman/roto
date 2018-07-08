@@ -19,8 +19,6 @@ ROTO_TEST_OBJS = \
 	tonewheel_osc_test.o
 
 CFLAGS=-DROTO_TEST
-AO_CFLAGS=`pkg-config --cflags ao`
-AO_LIBS=`pkg-config --libs ao`
 
 .c.o:
 	$(CC) $(CFLAGS) -c -g -o $@ $<
@@ -29,7 +27,7 @@ AO_LIBS=`pkg-config --libs ao`
 	$(CXX) $(CFLAGS) -c -g -o $@ $<
 
 roto.test: $(ROTO_TEST_OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(AO_LIBS) -g -o $@ $(ROTO_TEST_OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -g -o $@ $(ROTO_TEST_OBJS)
 
 test: roto.test
 	./roto.test
