@@ -26,16 +26,16 @@ TEST test_tonewheel_osc_fill1() {
     tonewheel_osc_fill(osc, &block[0], 10);
 
     int16_t want[10];
-    want[0] = 0x0101;
-    want[1] = 0x0202;
-    want[2] = 0x0302;
-    want[3] = 0x03fe;
-    want[4] = 0x04f6;
-    want[5] = 0x05e9;
-    want[6] = 0x06d6;
-    want[7] = 0x07bc;
-    want[8] = 0x089a;
-    want[9] = 0x096f;
+    want[0] = 0x0019;
+    want[1] = 0x0032;
+    want[2] = 0x004b;
+    want[3] = 0x0063;
+    want[4] = 0x007c;
+    want[5] = 0x0093;
+    want[6] = 0x00aa;
+    want[7] = 0x00c1;
+    want[8] = 0x00d7;
+    want[9] = 0x00eb;
 
     ASSERT_MEM_EQ(want, block, 10 * sizeof(int16_t));
 
