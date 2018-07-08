@@ -232,6 +232,25 @@ float resistance9(int key) {
     }
 }
 
+// manual_max_volume returns the sum of all volumes at maximum
+// output. This is used to normalize each drawbar volume.
+float manual_max_volume() {
+    float invR[92] = {0};
+
+    for (int k = 1; k < 62; k++) {
+        for (int d = 1; d < 10; d++) {
+            int t = tonewheel(k, d);
+            invR[t] += 1.0 / resistance(k, d);
+        }
+    }
+
+    float sum = 0.0;
+    for (int t = 1; t < 92; t++) {
+        sum += voltages[t] * invR[t];
+    }
+    return sum;
+}
+
 // manual_fill_volumes returns the current set of tonewheel volumes,
 // with values in the Q14 range. keys is an array of 61 keys on a
 // manual, zero indexed and nonzero if pressed. drawbars contains the
@@ -265,8 +284,10 @@ void manual_fill_volumes(uint8_t keys[62], uint8_t drawbars[10], uint16_t ret[92
         }
     }
 
+    float invmax = 1.0 / manual_max_volume();
     for (int t = 1; t < 92; t++) {
-        ret[t] = (uint16_t)(voltages[t] * invR[t] * 1000);
+        float current = voltages[t] * invR[t];
+        ret[t] = (uint16_t)(invmax * current * (float)(1 << 14) + 0.5);
     }
 }
 
