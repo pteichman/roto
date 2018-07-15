@@ -48,6 +48,7 @@ void setup() {
     audioShield.volume(0.8);
 
     usbMIDI.begin();
+    usbMIDI.setHandleControlChange(handleControlChange);
     usbMIDI.setHandleNoteOn(handleNoteOn);
     usbMIDI.setHandleNoteOff(handleNoteOff);
 }
@@ -67,6 +68,14 @@ int note2key(byte note) {
 void fullPolyphony() {
     for (int n = 0; n < 128; n++) {
         handleNoteOn(1, n, 127);
+    }
+}
+
+void randomDrawbars() {
+    for (int d = 1; d < 10; d++) {
+        drawbars[d] = random(0, 9);
+        manual_fill_volumes(keys, drawbars, volumes);
+        tonewheels.setVolumes(volumes);
     }
 }
 
@@ -98,6 +107,43 @@ void handleNoteOff(byte chan, byte note, byte vel) {
     keys[key] = 0;
     manual_fill_volumes(keys, drawbars, volumes);
     tonewheels.setVolumes(volumes);
+}
+
+void handleControlChange(byte chan, byte ctrl, byte val) {
+    Serial.print("Control Change, ch=");
+    Serial.print(chan, DEC);
+    Serial.print(", control=");
+    Serial.print(ctrl, DEC);
+    Serial.print(", value=");
+    Serial.print(val, DEC);
+    Serial.println();
+
+    if (ctrl >= 70 && ctrl < 79) {
+        int drawbar = ctrl - 69;
+        int pos = 0;
+        if (val < 16) {
+            pos = 0;
+        } else if (val < 32) {
+            pos = 1;
+        } else if (val < 48) {
+            pos = 2;
+        } else if (val < 64) {
+            pos = 3;
+        } else if (val < 80) {
+            pos = 4;
+        } else if (val < 96) {
+            pos = 5;
+        } else if (val < 112) {
+            pos = 6;
+        } else if (val < 127) {
+            pos = 7;
+        } else {
+            pos = 8;
+        }
+        drawbars[drawbar] = pos;
+        manual_fill_volumes(keys, drawbars, volumes);
+        tonewheels.setVolumes(volumes);
+    }
 }
 
 void showKeys() {
