@@ -4,6 +4,7 @@ SOURCES = \
 	manual.cpp \
 	manual.h \
 	manual_test.c \
+	preamp_audio.h \
 	roto.ino \
 	roto_test.c \
 	tonewheel_osc.cpp \

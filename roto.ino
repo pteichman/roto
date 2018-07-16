@@ -7,18 +7,21 @@
 #include <SerialFlash.h>
 
 #include "manual.h"
+#include "preamp_audio.h"
 #include "tonewheel_osc_audio.h"
 #include "vibrato_audio.h"
 
 TonewheelOsc tonewheels;
 Vibrato vibrato;
+Preamp preamp;
 AudioFilterBiquad antialias;
 AudioOutputI2S i2s1;
 
 AudioConnection patchCord0(tonewheels, 0, vibrato, 0);
-AudioConnection patchCord1(vibrato, 0, antialias, 0);
-AudioConnection patchCord2(antialias, 0, i2s1, 0);
-AudioConnection patchCord3(antialias, 0, i2s1, 1);
+AudioConnection patchCord1(vibrato, 0, preamp, 0);
+AudioConnection patchCord2(preamp, 0, antialias, 0);
+AudioConnection patchCord3(antialias, 0, i2s1, 0);
+AudioConnection patchCord4(antialias, 0, i2s1, 1);
 AudioControlSGTL5000 audioShield;
 
 uint8_t keys[62] = {0};
@@ -35,6 +38,7 @@ void setup() {
 
     tonewheels.init();
     vibrato.init();
+    preamp.init();
 
     drawbars[1] = 8;
     drawbars[2] = 8;
