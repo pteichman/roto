@@ -184,6 +184,12 @@ void usage() {
     Serial.print(vibrato.processorUsageMax());
     Serial.print("  ");
 
+    Serial.print("preamp=");
+    Serial.print(preamp.processorUsage());
+    Serial.print(",");
+    Serial.print(preamp.processorUsageMax());
+    Serial.print("  ");
+
     Serial.print("antialias=");
     Serial.print(antialias.processorUsage());
     Serial.print(",");
