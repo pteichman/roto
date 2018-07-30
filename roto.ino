@@ -11,23 +11,36 @@
 #include "tonewheel_osc_audio.h"
 #include "vibrato_audio.h"
 
+// Hammond B-3.
+AudioMixer4 organOut;
 TonewheelOsc tonewheels;
 Vibrato vibrato;
-Preamp preamp;
-AudioFilterBiquad antialias;
-AudioOutputI2S i2s1;
-
 AudioConnection patchCord0(tonewheels, 0, vibrato, 0);
-AudioConnection patchCord1(vibrato, 0, preamp, 0);
-AudioConnection patchCord2(preamp, 0, antialias, 0);
-AudioConnection patchCord3(antialias, 0, i2s1, 0);
-AudioConnection patchCord4(antialias, 0, i2s1, 1);
+AudioConnection patchCord1(vibrato, 0, organOut, 0);
+
+AudioSynthWaveformSine percussion;
+AudioEffectEnvelope percussionEnv;
+AudioConnection patchCord2(percussion, 0, percussionEnv, 0);
+AudioConnection patchCord3(percussionEnv, 0, organOut, 1);
+
+// Leslie 122.
+Preamp preamp;
+AudioConnection patchCord4(organOut, 0, preamp, 0);
+
+// Teensy output.
+AudioFilterBiquad antialias;
+AudioConnection patchCord5(organOut, 0, antialias, 0);
+
+AudioOutputI2S i2s1;
 AudioControlSGTL5000 audioShield;
+AudioConnection patchCord6(antialias, 0, i2s1, 0);
+AudioConnection patchCord7(antialias, 0, i2s1, 1);
 
 uint8_t keys[62] = {0};
 uint8_t drawbars[10] = {0};
 uint16_t volumes[92] = {0};
 
+uint8_t numKeysDown = 0;
 void handleNoteOn(byte chan, byte note, byte vel);
 void handleNoteOff(byte chan, byte note, byte vel);
 
@@ -39,6 +52,21 @@ void setup() {
     tonewheels.init();
     vibrato.init();
     preamp.init();
+
+    percussion.amplitude(1.0);
+    percussion.frequency(440);
+    percussion.phase(0);
+
+    percussionEnv.delay(0.0);
+    percussionEnv.attack(0.0);
+    percussionEnv.decay(300.0);
+    percussionEnv.sustain(0.0);
+    percussionEnv.release(0.0);
+
+    organOut.gain(0, 0.95); // tonewheels + vibrato
+    organOut.gain(1, 0.05); // percussionEnv
+    organOut.gain(2, 0);
+    organOut.gain(3, 0);
 
     drawbars[1] = 8;
     drawbars[2] = 8;
@@ -93,6 +121,11 @@ void handleNoteOn(byte chan, byte note, byte vel) {
         return;
     }
 
+    if (++numKeysDown == 1) {
+        float freq = pow(2.0, (note - 69) / 12.0) * 440;
+        percussion.frequency(freq * 2);
+        percussionEnv.noteOn();
+    }
     keys[key] = 1;
     manual_fill_volumes(keys, drawbars, volumes);
     tonewheels.setVolumes(volumes);
@@ -108,6 +141,9 @@ void handleNoteOff(byte chan, byte note, byte vel) {
         return;
     }
 
+    if (--numKeysDown == 0) {
+        percussionEnv.noteOff();
+    }
     keys[key] = 0;
     manual_fill_volumes(keys, drawbars, volumes);
     tonewheels.setVolumes(volumes);
@@ -144,6 +180,11 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
         } else {
             pos = 8;
         }
+
+        if (drawbar == 4 /* && percussion is on */) {
+            pos = 0;
+        }
+
         drawbars[drawbar] = pos;
         manual_fill_volumes(keys, drawbars, volumes);
         tonewheels.setVolumes(volumes);
