@@ -181,7 +181,7 @@ int32_t isin_S3(int32_t x) {
 }
 
 /// A sine approximation via a fourth-order cosine approx.
-/// @param x   angle (with 2^15 units/circle)
+/// @param x    Angle (with 2^15 units/circle)
 /// @return     Sine value (Q12)
 int32_t isin_S4(int32_t x) {
     int c, x2, y;
