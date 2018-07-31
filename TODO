@@ -3,10 +3,10 @@
     [ ] Crosstalk/leakage
 [X] Drawbars
 [X] Chorus/Vibrato
-[ ] Percussion
-    [ ] Soft
-    [ ] Fast
-    [ ] Third
+[X] Percussion
+    [X] Soft
+    [X] Fast
+    [X] Third
 [ ] Soft
 [ ] Leslie
     [ ] Two vibratos

@@ -40,9 +40,19 @@ uint8_t keys[62] = {0};
 uint8_t drawbars[10] = {0};
 uint16_t volumes[92] = {0};
 
+// Current state of the percussion settings.
+uint8_t percOn = 0;
+uint8_t percThird = 0;
+uint8_t percFast = 0;
+uint8_t percSoft = 0;
+
+// numKeysDown is used to keep the percussion effect single triggered:
+// only the first key down affects the percussion setting.
 uint8_t numKeysDown = 0;
+
 void handleNoteOn(byte chan, byte note, byte vel);
 void handleNoteOff(byte chan, byte note, byte vel);
+void handleControlChange(byte chan, byte ctrl, byte val);
 
 void setup() {
     Serial.begin(115200);
@@ -53,25 +63,18 @@ void setup() {
     vibrato.init();
     preamp.init();
 
-    percussion.amplitude(1.0);
-    percussion.frequency(440);
-    percussion.phase(0);
+    drawbars[1] = 8;
+    drawbars[2] = 8;
+    drawbars[3] = 8;
+    drawbars[4] = 8;
 
-    percussionEnv.delay(0.0);
-    percussionEnv.attack(0.0);
-    percussionEnv.decay(300.0);
-    percussionEnv.sustain(0.0);
-    percussionEnv.release(0.0);
+    updatePercussion();
+    updateTonewheels();
 
     organOut.gain(0, 0.95); // tonewheels + vibrato
     organOut.gain(1, 0.05); // percussionEnv
     organOut.gain(2, 0);
     organOut.gain(3, 0);
-
-    drawbars[1] = 8;
-    drawbars[2] = 8;
-    drawbars[3] = 8;
-    drawbars[4] = 8;
 
     vibrato.setMode(C3);
     antialias.setLowpass(0, 6000, 0.707);
@@ -89,7 +92,7 @@ int count = 0;
 void loop() {
     usbMIDI.read();
     if ((count++ % 500000) == 0) {
-        usage();
+        status();
     }
 }
 
@@ -121,9 +124,13 @@ void handleNoteOn(byte chan, byte note, byte vel) {
         return;
     }
 
-    if (++numKeysDown == 1) {
+    if (++numKeysDown == 1 && percOn) {
         float freq = pow(2.0, (note - 69) / 12.0) * 440;
-        percussion.frequency(freq * 2);
+        float mult = 2.0;
+        if (percThird) {
+            mult = 6.0;
+        }
+        percussion.frequency(freq * mult);
         percussionEnv.noteOn();
     }
     keys[key] = 1;
@@ -141,7 +148,7 @@ void handleNoteOff(byte chan, byte note, byte vel) {
         return;
     }
 
-    if (--numKeysDown == 0) {
+    if (--numKeysDown == 0 && percOn) {
         percussionEnv.noteOff();
     }
     keys[key] = 0;
@@ -149,6 +156,42 @@ void handleNoteOff(byte chan, byte note, byte vel) {
     tonewheels.setVolumes(volumes);
 }
 
+void updatePercussion() {
+    percussionEnv.delay(0.0);
+    percussionEnv.attack(0.0);
+    percussionEnv.sustain(0.0);
+    percussionEnv.release(0.0);
+
+    if (percFast) {
+        percussionEnv.decay(300.0);
+    } else {
+        percussionEnv.decay(630.0);
+    }
+
+    if (percSoft) {
+        percussion.amplitude(0.5);
+    } else {
+        percussion.amplitude(1.0);
+    }
+}
+
+void updateTonewheels() {
+    // Copy the drawbars so we can tweak them based on percussion
+    // settings (enabling percussion steals a drawbar).
+    uint8_t bars[10] = {0};
+    memcpy(bars, drawbars, 10);
+
+    if (percOn) {
+        bars[9] = 0;
+    }
+
+    manual_fill_volumes(keys, bars, volumes);
+    tonewheels.setVolumes(volumes);
+}
+
+// handleControlChange is compatible (where possible) with the Nord
+// Electro 3 MIDI implementation:
+// http://www.nordkeyboards.com/sites/default/files/files/downloads/manuals/nord-electro-3/Nord%20Electro%203%20English%20User%20Manual%20v3.x%20Edition%203.1.pdf
 void handleControlChange(byte chan, byte ctrl, byte val) {
     Serial.print("Control Change, ch=");
     Serial.print(chan, DEC);
@@ -157,6 +200,20 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
     Serial.print(", value=");
     Serial.print(val, DEC);
     Serial.println();
+
+    if (ctrl == 87) {
+        percOn = val;
+        updatePercussion();
+        updateTonewheels();
+    }
+    if (ctrl == 88) {
+        percFast = val;
+        updatePercussion();
+    }
+    if (ctrl == 89) {
+        percSoft = val;
+        updatePercussion();
+    }
 
     if (ctrl >= 70 && ctrl < 79) {
         int drawbar = ctrl - 69;
@@ -181,13 +238,8 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
             pos = 8;
         }
 
-        if (drawbar == 4 /* && percussion is on */) {
-            pos = 0;
-        }
-
         drawbars[drawbar] = pos;
-        manual_fill_volumes(keys, drawbars, volumes);
-        tonewheels.setVolumes(volumes);
+        updateTonewheels();
     }
 }
 
@@ -211,7 +263,7 @@ void showVolumes() {
     }
 }
 
-void usage() {
+void status() {
     Serial.print("CPU: ");
     Serial.print("tonewheels=");
     Serial.print(tonewheels.processorUsage());
@@ -247,6 +299,22 @@ void usage() {
     Serial.print(AudioMemoryUsage());
     Serial.print(",");
     Serial.print(AudioMemoryUsageMax());
+    Serial.print("    ");
+    Serial.println();
+}
+
+void statusPerc() {
+    Serial.print("percOn=");
+    Serial.print(percOn);
+    Serial.print("    ");
+    Serial.print("percFast=");
+    Serial.print(percFast);
+    Serial.print("    ");
+    Serial.print("percSoft=");
+    Serial.print(percSoft);
+    Serial.print("    ");
+    Serial.print("percThird=");
+    Serial.print(percThird);
     Serial.print("    ");
     Serial.println();
 }
