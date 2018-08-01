@@ -18,7 +18,7 @@ Vibrato vibrato;
 AudioConnection patchCord0(tonewheels, 0, vibrato, 0);
 AudioConnection patchCord1(vibrato, 0, organOut, 0);
 
-AudioSynthWaveformSine percussion;
+TonewheelOsc percussion;
 AudioEffectEnvelope percussionEnv;
 AudioConnection patchCord2(percussion, 0, percussionEnv, 0);
 AudioConnection patchCord3(percussionEnv, 0, organOut, 1);
@@ -39,9 +39,10 @@ AudioConnection patchCord7(antialias, 0, i2s1, 1);
 uint8_t keys[62] = {0};
 uint8_t drawbars[10] = {0};
 uint16_t volumes[92] = {0};
+uint16_t percVolumes[92] = {0};
 
 // Current state of the percussion settings.
-uint8_t percOn = 0;
+uint8_t percOn = 1;
 uint8_t percThird = 0;
 uint8_t percFast = 0;
 uint8_t percSoft = 0;
@@ -60,6 +61,7 @@ void setup() {
     AudioMemory(10);
 
     tonewheels.init();
+    percussion.init();
     vibrato.init();
     preamp.init();
 
@@ -71,8 +73,8 @@ void setup() {
     updatePercussion();
     updateTonewheels();
 
-    organOut.gain(0, 0.95); // tonewheels + vibrato
-    organOut.gain(1, 0.05); // percussionEnv
+    organOut.gain(0, 0.50); // tonewheels + vibrato
+    organOut.gain(1, 0.50); // percussionEnv
     organOut.gain(2, 0);
     organOut.gain(3, 0);
 
@@ -109,8 +111,7 @@ void fullPolyphony() {
 void randomDrawbars() {
     for (int d = 1; d < 10; d++) {
         drawbars[d] = random(0, 9);
-        manual_fill_volumes(keys, drawbars, volumes);
-        tonewheels.setVolumes(volumes);
+        updateTonewheels();
     }
 }
 
@@ -124,18 +125,12 @@ void handleNoteOn(byte chan, byte note, byte vel) {
         return;
     }
 
+    keys[key] = 1;
+    updateTonewheels();
+
     if (++numKeysDown == 1 && percOn) {
-        float freq = pow(2.0, (note - 69) / 12.0) * 440;
-        float mult = 2.0;
-        if (percThird) {
-            mult = 6.0;
-        }
-        percussion.frequency(freq * mult);
         percussionEnv.noteOn();
     }
-    keys[key] = 1;
-    manual_fill_volumes(keys, drawbars, volumes);
-    tonewheels.setVolumes(volumes);
 }
 
 void handleNoteOff(byte chan, byte note, byte vel) {
@@ -151,9 +146,9 @@ void handleNoteOff(byte chan, byte note, byte vel) {
     if (--numKeysDown == 0 && percOn) {
         percussionEnv.noteOff();
     }
+
     keys[key] = 0;
-    manual_fill_volumes(keys, drawbars, volumes);
-    tonewheels.setVolumes(volumes);
+    updateTonewheels();
 }
 
 void updatePercussion() {
@@ -169,9 +164,9 @@ void updatePercussion() {
     }
 
     if (percSoft) {
-        percussion.amplitude(0.5);
+        organOut.gain(1, 0.25);
     } else {
-        percussion.amplitude(1.0);
+        organOut.gain(1, 0.50);
     }
 }
 
@@ -180,10 +175,19 @@ void updateTonewheels() {
     // settings (enabling percussion steals a drawbar).
     uint8_t bars[10] = {0};
     memcpy(bars, drawbars, 10);
+    uint8_t percBars[10] = {0};
 
     if (percOn) {
         bars[9] = 0;
+        if (percThird) {
+            percBars[5] = 32;
+        } else {
+            percBars[4] = 32;
+        }
     }
+
+    manual_fill_volumes(keys, percBars, percVolumes);
+    percussion.setVolumes(percVolumes);
 
     manual_fill_volumes(keys, bars, volumes);
     tonewheels.setVolumes(volumes);

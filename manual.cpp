@@ -89,10 +89,6 @@ int tonewheel(int key, int drawbar) {
 // _value_. It's scaled such that each drawbar stop doubles the power
 // output, normalized to 0.0..1.0. Turns out this is value / 8.
 float drawbar_volume(uint8_t value) {
-    if (value > 8) {
-        return 0;
-    }
-
     // (sqrt(2) * value) / (sqrt(2) * 8) = 0.125 * value
     return 0.125 * (float)value;
 }
