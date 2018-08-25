@@ -3,38 +3,44 @@
 #include <Audio.h>
 #include <Wire.h>
 #include <SPI.h>
-#include <SD.h>
 #include <SerialFlash.h>
 
 #include "manual.h"
-#include "preamp_audio.h"
+#include "monitor_audio.h"
 #include "tonewheel_osc_audio.h"
 #include "vibrato_audio.h"
 
 // Hammond B-3.
 AudioMixer4 organOut;
 TonewheelOsc tonewheels;
+Monitor tonewheelsMonitor;
 Vibrato vibrato;
-AudioConnection patchCord0(tonewheels, 0, vibrato, 0);
-AudioConnection patchCord1(vibrato, 0, organOut, 0);
+
+AudioConnection patchCord0(tonewheels, 0, tonewheelsMonitor, 0);
+AudioConnection patchCord1(tonewheelsMonitor, 0, vibrato, 0);
+AudioConnection patchCord2(vibrato, 0, organOut, 0);
 
 TonewheelOsc percussion;
 AudioEffectEnvelope percussionEnv;
-AudioConnection patchCord2(percussion, 0, percussionEnv, 0);
-AudioConnection patchCord3(percussionEnv, 0, organOut, 1);
 
-// Leslie 122.
-Preamp preamp;
-AudioConnection patchCord4(organOut, 0, preamp, 0);
+AudioConnection patchCord3(percussion, 0, percussionEnv, 0);
+AudioConnection patchCord4(percussionEnv, 0, organOut, 1);
 
-// Teensy output.
 AudioFilterBiquad antialias;
 AudioConnection patchCord5(organOut, 0, antialias, 0);
 
+// Teensy audio board output.
 AudioOutputI2S i2s1;
 AudioControlSGTL5000 audioShield;
 AudioConnection patchCord6(antialias, 0, i2s1, 0);
 AudioConnection patchCord7(antialias, 0, i2s1, 1);
+
+#ifdef AUDIO_INTERFACE
+// If the board is configured for USB audio, mirror the i2s output to USB.
+AudioOutputUSB usbAudio;
+AudioConnection patchCord8(antialias, 0, usbAudio, 0);
+AudioConnection patchCord9(antialias, 0, usbAudio, 1);
+#endif
 
 uint8_t keys[62] = {0};
 uint8_t drawbars[10] = {0};
@@ -63,7 +69,6 @@ void setup() {
     tonewheels.init();
     percussion.init();
     vibrato.init();
-    preamp.init();
 
     drawbars[1] = 8;
     drawbars[2] = 8;
@@ -82,7 +87,7 @@ void setup() {
     antialias.setLowpass(0, 6000, 0.707);
 
     audioShield.enable();
-    audioShield.volume(0.8);
+    audioShield.volume(0.95);
 
     usbMIDI.begin();
     usbMIDI.setHandleControlChange(handleControlChange);
@@ -95,6 +100,7 @@ void loop() {
     usbMIDI.read();
     if ((count++ % 500000) == 0) {
         status();
+        statusVolume();
     }
 }
 
@@ -153,7 +159,7 @@ void handleNoteOff(byte chan, byte note, byte vel) {
 
 void updatePercussion() {
     percussionEnv.delay(0.0);
-    percussionEnv.attack(0.0);
+    percussionEnv.attack(0.1);
     percussionEnv.sustain(0.0);
     percussionEnv.release(0.0);
 
@@ -204,6 +210,10 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
     Serial.print(", value=");
     Serial.print(val, DEC);
     Serial.println();
+
+    if (ctrl == 16) {
+        organOut.gain(0, float(127) / float(val));
+    }
 
     if (ctrl == 87) {
         percOn = val;
@@ -281,12 +291,6 @@ void status() {
     Serial.print(vibrato.processorUsageMax());
     Serial.print("  ");
 
-    Serial.print("preamp=");
-    Serial.print(preamp.processorUsage());
-    Serial.print(",");
-    Serial.print(preamp.processorUsageMax());
-    Serial.print("  ");
-
     Serial.print("antialias=");
     Serial.print(antialias.processorUsage());
     Serial.print(",");
@@ -305,6 +309,21 @@ void status() {
     Serial.print(AudioMemoryUsageMax());
     Serial.print("    ");
     Serial.println();
+}
+
+void statusVolume() {
+    Serial.print("Volume: ");
+    Serial.print("tonewheels=");
+    Serial.print(tonewheelsMonitor.volumeUsageMin());
+    Serial.print(",");
+    Serial.print(tonewheelsMonitor.volumeUsageMax());
+    Serial.print("    ");
+    Serial.print(tonewheelsMonitor.volumeUsageMinEver());
+    Serial.print(",");
+    Serial.print(tonewheelsMonitor.volumeUsageMaxEver());
+    Serial.println();
+
+    tonewheelsMonitor.reset();
 }
 
 void statusPerc() {
