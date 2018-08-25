@@ -2,6 +2,10 @@
 
 #ifdef ROTO_TEST
 
+#include <limits.h>
+#include <stdio.h>
+#include <string.h>
+
 #include "greatest.h"
 
 #include "manual.h"
@@ -47,30 +51,97 @@ TEST test_manual_tonewheel() {
     PASS();
 }
 
-TEST test_manual_fill_volumes() {
+// The tonewheel oscillator block expects these volumes to be
+// Q19. This test ensures we never overflow that range.
+TEST test_manual_volume_overflow() {
     uint8_t keys[62] = {0};
     uint8_t drawbars[10] = {0};
     uint16_t ret[92] = {0};
 
-    keys[1] = 1;
-    keys[3] = 1;
-    keys[5] = 1;
-    drawbars[1] = 8;
-    drawbars[3] = 8;
-    drawbars[8] = 8;
-    manual_fill_volumes(keys, drawbars, ret);
+    // Hold down all the keys on this manual.
+    for (int i = 0; i < 62; i++) {
+        keys[i] = 1;
+    }
 
+    // Pull out all the stops.
+    for (int i = 0; i < 10; i++) {
+        drawbars[i] = 8;
+    }
+
+    uint32_t total = manual_fill_volumes(keys, drawbars, ret);
+
+    // The total volumes here cannot overflow the expected Q19 range.
+    uint32_t sum = 0;
     for (int i = 0; i < 92; i++) {
-        printf("t = %i; v = %d\n", i, ret[i]);
+        sum += ret[i];
+    }
+    ASSERT_EQ_FMT(total, sum, "%d");
+
+    if (sum > (1 << 19)) {
+        char *msg = calloc(128, 1);
+        snprintf(msg, 128, "overflow volume=%d (limit %d)", sum, (1 << 19));
+        FAILm(msg);
+        free(msg);
+    }
+
+    PASS();
+}
+
+// Our core sine oscillator has Q12 bits of precision. To avoid
+// truncating its precision, volume output must be at least 1<<10.
+// This ensures we only scale those sines up rather than down.
+TEST test_manual_volume_underflow() {
+    uint8_t keys[62] = {0};
+    uint8_t drawbars[10] = {0};
+    uint16_t ret[92] = {0};
+
+    // Track the key and drawbar where the minimum volume is found.
+    int mink = -1;
+    int mind = -1;
+    int mint = -1;
+    int minv = SHRT_MAX;
+
+    for (int k = 13; k < 62; k++) {
+        // Hold down one key.
+        memset(keys, 0, 62);
+        keys[k] = 1;
+
+        for (int d = 1; d < 10; d++) {
+            // Pull one drawbar out one stop.
+            memset(drawbars, 0, 10);
+            drawbars[d] = 1;
+
+            manual_fill_volumes(keys, drawbars, ret);
+            for (int t = 1; t < 92; t++) {
+                if (ret[t] == 0 || ret[t] >= minv) {
+                    continue;
+                }
+
+                mink = k;
+                mind = d;
+                mint = t;
+                minv = ret[t];
+            }
+        }
+    }
+
+    // Enforce volumes of at least 128 so we don't truncate the
+    // precision of our sine waves too much.
+    if (minv < (1 << 7)) {
+        char *msg = calloc(128, 1);
+        snprintf(msg, 128, "underflow k=%d d=%d t=%d -> volume=%d", mink, mind, mint, minv);
+        FAILm(msg);
+        free(msg);
     }
 
     PASS();
 }
 
 GREATEST_SUITE(manual_suite) {
-    RUN_TEST(test_manual_fill_volumes);
     RUN_TEST(test_manual_foldback);
     RUN_TEST(test_manual_tonewheel);
+    RUN_TEST(test_manual_volume_overflow);
+    RUN_TEST(test_manual_volume_underflow);
 }
 
 #endif

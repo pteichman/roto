@@ -150,8 +150,8 @@ void tonewheel_osc_fill(tonewheel_osc *osc, int16_t *block, size_t block_len) {
 
         for (size_t j = 0; j < block_len; j++) {
             phase += phase_incr;
-            // isin_S4 is Q12; volume is Q14
-            block[j] += (isin_S4(phase) * volume) >> 10;
+            // isin_S4 is Q12; volume is Q19
+            block[j] += (isin_S4(phase) * volume) >> 15;
         }
         osc->phases[i] = phase;
     }

@@ -230,23 +230,8 @@ float resistance9(int key) {
     }
 }
 
-// manual_max_volume returns the sum of all volumes at maximum
-// output. This is used to normalize each drawbar volume.
-float manual_max_volume() {
-    float invR[92] = {0};
-
-    for (int k = 1; k < 62; k++) {
-        for (int d = 1; d < 10; d++) {
-            int t = tonewheel(k, d);
-            invR[t] += 1.0 / resistance(k, d);
-        }
-    }
-
-    float sum = 0.0;
-    for (int t = 1; t < 92; t++) {
-        sum += voltages[t] * invR[t];
-    }
-    return sum;
+float remap(float v, float oldmin, float oldmax, float newmin, float newmax) {
+    return newmin + (v - oldmin) * (newmax - newmin) / (oldmax - oldmin);
 }
 
 // manual_fill_volumes returns the current set of tonewheel volumes,
@@ -263,30 +248,42 @@ float manual_max_volume() {
 // drawbars[7]: 1 3/5' (15th)
 // drawbars[8]: 1 1/3' (19th)
 // drawbars[9]: 1' (22nd)
-void manual_fill_volumes(uint8_t keys[62], uint8_t drawbars[10], uint16_t ret[92]) {
-    // invR is the inverse resistance connected from tonewheel t.
-    float invR[92] = {0};
+uint32_t manual_fill_volumes(uint8_t keys[62], uint8_t drawbars[10], uint16_t ret[92]) {
+    float drawvols[] = {0, 1.414, 2, 2.828, 5, 5.657, 8, 11.31, 16};
 
+    // The total possible gain per tonewheel, if all keys are down and
+    // all the stops are out.
+    float totals[92] = {0};
+
+    float gains[92] = {0};
     for (int k = 1; k < 62; k++) {
-        if (keys[k] == 0) {
-            continue;
-        }
-
         for (int d = 1; d < 10; d++) {
-            if (drawbars[d] == 0) {
+            int t = tonewheel(k, d);
+            totals[t] += drawvols[d];
+            if (keys[k] == 0 || drawbars[d] == 0) {
                 continue;
             }
-
-            int t = tonewheel(k, d);
-            invR[t] += drawbar_volume(drawbars[d]) / resistance(k, d);
+            gains[t] += drawvols[d];
         }
     }
 
-    float invmax = 1.0 / manual_max_volume();
+    float sum = 0;
     for (int t = 1; t < 92; t++) {
-        float current = voltages[t] * invR[t];
-        ret[t] = (uint16_t)(invmax * current * (float)(1 << 14) + 0.5);
+        sum += totals[t];
     }
+
+    // Normalize gains to set the range of the oscillator to 0.0 .. 1.0
+    uint32_t total = 0;
+    for (int t = 0; t < 92; t++) {
+        if (gains[t] == 0) {
+            ret[t] = 0;
+            continue;
+        }
+        uint32_t v = (uint32_t)remap(gains[t], 0, sum, (float)(1 << 11), (float)(1 << 18));
+        total += v;
+        ret[t] = (uint16_t)v;
+    }
+    return total;
 }
 
 #if defined(__cplusplus)
