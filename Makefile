@@ -1,6 +1,10 @@
 .PHONY: all clean test fmt
 
 SOURCES = \
+	amfm.cpp \
+	amfm.h \
+	amfm_audio.h \
+	amfm_test.c \
 	manual.cpp \
 	manual.h \
 	manual_test.c \
@@ -17,6 +21,8 @@ SOURCES = \
 	vibrato_test.c
 
 ROTO_TEST_OBJS = \
+	amfm.o \
+	amfm_test.o \
 	manual.o \
 	manual_test.o \
 	roto_test.o \

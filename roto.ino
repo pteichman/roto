@@ -5,6 +5,7 @@
 #include <SPI.h>
 #include <SerialFlash.h>
 
+#include "amfm_audio.h"
 #include "manual.h"
 #include "monitor_audio.h"
 #include "tonewheel_osc_audio.h"
@@ -29,17 +30,20 @@ AudioConnection patchCord4(percussionEnv, 0, organOut, 1);
 AudioFilterBiquad antialias;
 AudioConnection patchCord5(organOut, 0, antialias, 0);
 
+AmFm leslie;
+AudioConnection patchCord6(antialias, 0, leslie, 0);
+
 // Teensy audio board output.
 AudioOutputI2S i2s1;
 AudioControlSGTL5000 audioShield;
-AudioConnection patchCord6(antialias, 0, i2s1, 0);
-AudioConnection patchCord7(antialias, 0, i2s1, 1);
+AudioConnection patchCord7(leslie, 0, i2s1, 0);
+AudioConnection patchCord8(leslie, 0, i2s1, 1);
 
 #ifdef AUDIO_INTERFACE
 // If the board is configured for USB audio, mirror the i2s output to USB.
 AudioOutputUSB usbAudio;
-AudioConnection patchCord8(antialias, 0, usbAudio, 0);
-AudioConnection patchCord9(antialias, 0, usbAudio, 1);
+AudioConnection patchCord9(antialias, 0, usbAudio, 0);
+AudioConnection patchCord10(antialias, 0, usbAudio, 1);
 #endif
 
 uint8_t keys[62] = {0};
@@ -69,6 +73,7 @@ void setup() {
     tonewheels.init();
     percussion.init();
     vibrato.init();
+    leslie.init();
 
     drawbars[1] = 8;
     drawbars[2] = 8;

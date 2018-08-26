@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+#include <stddef.h>
 #include <stdint.h>
 
 // tonewheel_osc simulates a set of Hammond B3 tonewheels.
@@ -20,6 +21,9 @@ tonewheel_osc *tonewheel_osc_new();
 void tonewheel_osc_set_volume(tonewheel_osc *osc, uint8_t tonewheel, uint16_t volume);
 
 void tonewheel_osc_fill(tonewheel_osc *osc, int16_t *block, size_t block_len);
+
+int32_t isin_S3(int32_t x);
+int32_t isin_S4(int32_t x);
 
 #if defined(__cplusplus)
 }
