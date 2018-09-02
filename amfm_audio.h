@@ -40,12 +40,12 @@ class AmFm : public AudioStream {
         // Our readOffset starts from 0 (no delay) and increases from
         // there, so it's always subtracted from the ring buffer write
         // index.
-        int16_t maxDelay = (int16_t)(44.1 * ms);
+        int16_t maxDelay = (int16_t)(44.1 * ms * 256); // *256 for a <<8
 
         // Clamp the delay to our ringbuffer length.
         if (maxDelay < 0) {
             maxDelay = 0;
-        } else if (maxDelay > AMFM_RINGBUF_LEN) {
+        } else if ((maxDelay >> 8) > AMFM_RINGBUF_LEN) {
             maxDelay = AMFM_RINGBUF_LEN;
         }
 

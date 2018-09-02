@@ -44,18 +44,31 @@ void amfm_update(int16_t *dst, int16_t *src, int dstsrc_len, int16_t *ringbuf, i
         uint16_t scale = (phase >> 8) & 0xFFFF; // next 16 bits */
 
         int16_t volume = lerp_i16(readVolume[index], readVolume[index + 1], scale);
-        int16_t offset = readOffset[index];
 
-        int rp = wp + offset;
-        rp %= ringbuf_len;
+        // The read offset has been encoded as a Q8.8 number; strip
+        // out the top 8 bits for offset and the bottom 8 for scale,
+        // but map scale into 0..0xFFFF as lerp expects.
+        int16_t offset = readOffset[index] >> 8;
+        scale = (readOffset[index] & 0xFF) << 8;
 
-        int16_t sample = ringbuf[rp];
+        int rp0 = wp - offset - 1;
+        if (rp0 < 0) {
+            rp0 += ringbuf_len;
+        }
+        int rp1 = wp - offset;
+        if (rp1 < 0) {
+            rp1 += ringbuf_len;
+        }
+
+        int16_t sample = lerp_i16(ringbuf[rp0], ringbuf[rp1], 0xFFFF - scale);
         dst[i] = (sample * volume) >> 15;
 
         phase += phaseIncr;
 
         wp++;
-        wp %= ringbuf_len;
+        if (wp == ringbuf_len) {
+            wp -= ringbuf_len;
+        }
     }
 
     *ringbuf_wp = wp;

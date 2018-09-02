@@ -75,11 +75,38 @@ TEST test_fill_sinemod_amplitude() {
     PASS();
 }
 
+TEST test_amfm_update() {
+    // Make sure a constant input results in a constant output.
+    int srcdst_len = 8;
+    int16_t src[8] = {1024, 1014, 1024, 1024, 1024, 1024, 1024, 1024};
+    int16_t dst[8] = {0};
+
+    int16_t ringbuf[512] = {0};
+    int ringbuf_len = 512;
+
+    int16_t volume[257] = {0};
+    for (int i = 0; i < 257; i++) {
+        volume[i] = (1 << 15) - 1;
+    }
+
+    int16_t offset[257] = {0};
+    fill_sinemod(offset, 0, (int16_t)(44.1 * 256), 0); // 0ms -> ~1ms delay (44100 / 1000)
+    offset[256] = offset[0];
+
+    int wp = 0;
+    uint32_t phase = 0;
+
+    amfm_update(dst, src, srcdst_len, ringbuf, ringbuf_len, &wp, volume, offset, 1 << 24, &phase);
+
+    PASS();
+}
+
 GREATEST_SUITE(amfm_suite) {
     RUN_TEST(test_fill_sinemod);
     RUN_TEST(test_fill_sinemod_zeros);
     RUN_TEST(test_fill_sinemod_phase);
     RUN_TEST(test_fill_sinemod_amplitude);
+    RUN_TEST(test_amfm_update);
 }
 
 #endif
