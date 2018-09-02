@@ -30,20 +30,37 @@ AudioConnection patchCord4(percussionEnv, 0, organOut, 1);
 AudioFilterBiquad antialias;
 AudioConnection patchCord5(organOut, 0, antialias, 0);
 
-AmFm leslie;
-AudioConnection patchCord6(antialias, 0, leslie, 0);
+AudioFilterStateVariable crossover;
+AmFm leslieBassR;
+AmFm leslieTrebleR;
+AudioMixer4 leslieR;
+AmFm leslieBassL;
+AmFm leslieTrebleL;
+AudioMixer4 leslieL;
+
+AudioConnection patchCord6(antialias, 0, crossover, 0);
+
+AudioConnection patchCord7(crossover, 0, leslieBassR, 0);
+AudioConnection patchCord8(crossover, 2, leslieTrebleR, 0);
+AudioConnection patchCord9(leslieBassR, 0, leslieR, 0);
+AudioConnection patchCord10(leslieTrebleR, 0, leslieR, 1);
+
+AudioConnection patchCord11(crossover, 0, leslieBassL, 0);
+AudioConnection patchCord12(crossover, 2, leslieTrebleL, 0);
+AudioConnection patchCord13(leslieBassL, 0, leslieL, 0);
+AudioConnection patchCord14(leslieTrebleL, 0, leslieL, 1);
 
 // Teensy audio board output.
 AudioOutputI2S i2s1;
 AudioControlSGTL5000 audioShield;
-AudioConnection patchCord7(leslie, 0, i2s1, 0);
-AudioConnection patchCord8(leslie, 0, i2s1, 1);
+AudioConnection patchCord15(leslieR, 0, i2s1, 0);
+AudioConnection patchCord16(leslieL, 0, i2s1, 1);
 
 #ifdef AUDIO_INTERFACE
 // If the board is configured for USB audio, mirror the i2s output to USB.
 AudioOutputUSB usbAudio;
-AudioConnection patchCord9(leslie, 0, usbAudio, 0);
-AudioConnection patchCord10(leslie, 0, usbAudio, 1);
+AudioConnection patchCord17(leslieR, 0, usbAudio, 0);
+AudioConnection patchCord18(leslieL, 0, usbAudio, 1);
 #endif
 
 uint8_t keys[62] = {0};
@@ -73,7 +90,33 @@ void setup() {
     tonewheels.init();
     percussion.init();
     vibrato.init();
-    leslie.init();
+
+    crossover.frequency(800);
+    crossover.resonance(0.707);
+    leslieBassR.init();
+    leslieTrebleR.init();
+    leslieBassL.init();
+    leslieTrebleL.init();
+
+    leslieBassR.setTremoloDepth(0.5);
+    leslieTrebleR.setTremoloDepth(0.3);
+    leslieBassL.setTremoloDepth(0.5);
+    leslieTrebleL.setTremoloDepth(0.3);
+
+    leslieBassR.setPhase(0.25);
+    leslieTrebleL.setPhase(0.25);
+
+    // Slow: http://www.dairiki.org/HammondWiki/LeslieRotationSpeed
+    leslieBassR.setRotationRate(0.666);
+    leslieTrebleR.setRotationRate(0.8);
+    leslieBassL.setRotationRate(0.666);
+    leslieTrebleL.setRotationRate(0.8);
+
+    // Fast
+    leslieBassR.setRotationRate(5.7);
+    leslieTrebleR.setRotationRate(6.66);
+    leslieBassL.setRotationRate(5.7);
+    leslieTrebleL.setRotationRate(6.66);
 
     drawbars[1] = 8;
     drawbars[2] = 8;
@@ -87,6 +130,11 @@ void setup() {
     organOut.gain(1, 0.50); // percussionEnv
     organOut.gain(2, 0);
     organOut.gain(3, 0);
+
+    leslieR.gain(0, 0.50); // bass
+    leslieR.gain(1, 0.50); // treble
+    leslieL.gain(0, 0.50); // bass
+    leslieL.gain(1, 0.50); // treble
 
     vibrato.setMode(C3);
     antialias.setLowpass(0, 6000, 0.707);

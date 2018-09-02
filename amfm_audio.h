@@ -78,6 +78,10 @@ class AmFm : public AudioStream {
         phaseIncr = (uint32_t)(hz * 97391.55 + 0.5);
     }
 
+    void setPhase(float norm) {
+        phase = (uint32_t)((float)(0xFFFFFFFF) * norm);
+    }
+
     void update(void) {
         audio_block_t *in = receiveReadOnly(0);
         if (in == NULL) {
