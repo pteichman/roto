@@ -22,7 +22,7 @@ class AmFm : public AudioStream {
     void init() {
         phase = 0;
         setDelayDepth(0);
-        setTremoloDepth(1);
+        setTremoloDepth(0);
         setRotationRate(0);
         memset(ringbuf, 0, AMFM_RINGBUF_LEN * sizeof(int16_t));
     }
@@ -105,10 +105,8 @@ class AmFm : public AudioStream {
             int16_t volume = lerp(readVolume[index], readVolume[index + 1], scale);
             int16_t offset = readOffset[index];
 
-            int rp = wp - offset;
-            if (rp < 0) {
-                rp += AMFM_RINGBUF_LEN;
-            }
+            int rp = wp + offset;
+            rp %= AMFM_RINGBUF_LEN;
 
             int16_t sample = ringbuf[rp];
             out->data[i] = (sample * volume) >> 15;
@@ -116,9 +114,7 @@ class AmFm : public AudioStream {
             phase += phaseIncr;
 
             wp++;
-            if (wp >= AMFM_RINGBUF_LEN) {
-                wp = 0;
-            }
+            wp %= AMFM_RINGBUF_LEN;
         }
 
         transmit(out, 0);
