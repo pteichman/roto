@@ -90,32 +90,9 @@ class AmFm : public AudioStream {
             return;
         }
 
-        // Read a block from the ring buffer, moving the read head
-        // according to readOffset and modulating its output by
-        // readVolume.
-        for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
-            // First, write the next sample to the ring buffer.
-            ringbuf[wp] = in->data[i];
-
-            // Figure out where the read pointer is. First: 8-bit
-            // angle and interpolation scale.
-            uint8_t index = phase >> 24;            // top 8 bits */
-            uint16_t scale = (phase >> 8) & 0xFFFF; // next 16 bits */
-
-            int16_t volume = lerp(readVolume[index], readVolume[index + 1], scale);
-            int16_t offset = readOffset[index];
-
-            int rp = wp + offset;
-            rp %= AMFM_RINGBUF_LEN;
-
-            int16_t sample = ringbuf[rp];
-            out->data[i] = (sample * volume) >> 15;
-
-            phase += phaseIncr;
-
-            wp++;
-            wp %= AMFM_RINGBUF_LEN;
-        }
+        // Making this overly complex in order to extract the logic
+        // into amfm.cpp for offline testing. To be cleaned up later.
+        amfm_update(out->data, in->data, AUDIO_BLOCK_SAMPLES, ringbuf, AMFM_RINGBUF_LEN, &wp, readVolume, readOffset, phaseIncr, &phase);
 
         transmit(out, 0);
         release(out);
@@ -138,10 +115,6 @@ class AmFm : public AudioStream {
     int16_t readVolume[257];
 
     audio_block_t *inputQueueArray[1];
-
-    int16_t lerp(int16_t a, int16_t b, uint16_t scale) {
-        return ((0xFFFF - scale) * a + scale * b) >> 16;
-    }
 };
 
 #endif
