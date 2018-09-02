@@ -27,7 +27,7 @@ void amfm_set_distmod(amfm *effect, uint16_t distmod[256]);
 // 2^15 units/circle.
 void fill_sinemod(int16_t ret[256], int16_t min, int16_t max, int32_t phase);
 
-void amfm_update(int16_t *dst, int16_t *src, int dstsrc_len, int16_t *ringbuf, int ringbuf_len, int *ringbuf_wp, int16_t *readVolume, int16_t *readOffset, uint32_t phaseIncr, uint32_t *phase_out);
+void amfm_update(int16_t *dst, int16_t *src, int dstsrc_len, int16_t *ringbuf, int ringbuf_len, uint32_t *ringbuf_wp, int16_t *readVolume, int16_t *readOffset, uint32_t phaseIncr, uint32_t *phase_out);
 
 #if defined(__cplusplus)
 }

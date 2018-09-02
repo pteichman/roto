@@ -102,7 +102,7 @@ class AmFm : public AudioStream {
   private:
     // Ring buffer & its write position.
     int16_t ringbuf[AMFM_RINGBUF_LEN];
-    int wp;
+    uint32_t wp;
 
     // Phase increment & current angle for speaker rotation.
     uint32_t phaseIncr;

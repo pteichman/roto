@@ -27,8 +27,8 @@ void fill_sinemod(int16_t ret[256], int16_t min, int16_t max, int32_t phase) {
     }
 }
 
-void amfm_update(int16_t *dst, int16_t *src, int dstsrc_len, int16_t *ringbuf, int ringbuf_len, int *ringbuf_wp, int16_t *readVolume, int16_t *readOffset, uint32_t phaseIncr, uint32_t *phase_out) {
-    int wp = *ringbuf_wp;
+void amfm_update(int16_t *dst, int16_t *src, int dstsrc_len, int16_t *ringbuf, int ringbuf_len, uint32_t *ringbuf_wp, int16_t *readVolume, int16_t *readOffset, uint32_t phaseIncr, uint32_t *phase_out) {
+    uint32_t wp = *ringbuf_wp;
     uint32_t phase = *phase_out;
 
     // Read a block from the ring buffer, moving the read head
@@ -36,7 +36,7 @@ void amfm_update(int16_t *dst, int16_t *src, int dstsrc_len, int16_t *ringbuf, i
     // readVolume.
     for (int i = 0; i < dstsrc_len; i++) {
         // First, write the next sample to the ring buffer.
-        ringbuf[wp] = src[i];
+        ringbuf[wp % ringbuf_len] = src[i];
 
         // Figure out where the read pointer is. First: 8-bit
         // angle and interpolation scale.
@@ -52,23 +52,17 @@ void amfm_update(int16_t *dst, int16_t *src, int dstsrc_len, int16_t *ringbuf, i
         scale = (readOffset[index] & 0xFF) << 8;
 
         int rp0 = wp - offset - 1;
-        if (rp0 < 0) {
-            rp0 += ringbuf_len;
-        }
         int rp1 = wp - offset;
-        if (rp1 < 0) {
-            rp1 += ringbuf_len;
-        }
 
-        int16_t sample = lerp_i16(ringbuf[rp0], ringbuf[rp1], 0xFFFF - scale);
+        int16_t a = ringbuf[rp0 % ringbuf_len];
+        int16_t b = ringbuf[rp1 % ringbuf_len];
+
+        int16_t sample = lerp_i16(a, b, scale);
         dst[i] = (sample * volume) >> 15;
 
         phase += phaseIncr;
 
         wp++;
-        if (wp == ringbuf_len) {
-            wp -= ringbuf_len;
-        }
     }
 
     *ringbuf_wp = wp;
