@@ -42,8 +42,8 @@ AudioConnection patchCord8(leslie, 0, i2s1, 1);
 #ifdef AUDIO_INTERFACE
 // If the board is configured for USB audio, mirror the i2s output to USB.
 AudioOutputUSB usbAudio;
-AudioConnection patchCord9(antialias, 0, usbAudio, 0);
-AudioConnection patchCord10(antialias, 0, usbAudio, 1);
+AudioConnection patchCord9(leslie, 0, usbAudio, 0);
+AudioConnection patchCord10(leslie, 0, usbAudio, 1);
 #endif
 
 uint8_t keys[62] = {0};
