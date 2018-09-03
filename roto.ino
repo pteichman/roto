@@ -267,6 +267,10 @@ void updateTonewheels() {
     tonewheels.setVolumes(volumes);
 }
 
+float remap(float v, float oldmin, float oldmax, float newmin, float newmax) {
+    return newmin + (v - oldmin) * (newmax - newmin) / (oldmax - oldmin);
+}
+
 // handleControlChange is compatible (where possible) with the Nord
 // Electro 3 MIDI implementation:
 // http://www.nordkeyboards.com/sites/default/files/files/downloads/manuals/nord-electro-3/Nord%20Electro%203%20English%20User%20Manual%20v3.x%20Edition%203.1.pdf
@@ -280,11 +284,7 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
     Serial.println();
 
     if (ctrl == 11) {
-	if (val == 0)  {
-	    swell.gain(0);
-	} else {
-	    swell.gain(127 / (float)(127 - val));
-	}
+        swell.gain(remap((float)val, 0, 127, 0, 5));
     }
 
     if (ctrl == 16) {
