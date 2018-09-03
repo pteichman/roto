@@ -49,7 +49,14 @@ class Preamp : public AudioStream {
         int16_t *src = in->data;
         int16_t *dst = out->data;
         for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
-            dst[i] = lookup[src[i] + 32768];
+            int32_t index = (int32_t)(src[i]) + 32768;
+
+            if (index < 0) {
+                index = 0;
+            } else if (index > 65535) {
+                index = 65535;
+            }
+            dst[i] = lookup[index];
         }
 
         transmit(out, 0);
@@ -58,8 +65,9 @@ class Preamp : public AudioStream {
     }
 
   private:
-    audio_block_t *inputQueueArray[1];
     int16_t lookup[65536];
+
+    audio_block_t *inputQueueArray[1];
 };
 
 #endif

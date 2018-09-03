@@ -8,6 +8,7 @@
 #include "amfm_audio.h"
 #include "manual.h"
 #include "monitor_audio.h"
+#include "preamp_audio.h"
 #include "tonewheel_osc_audio.h"
 #include "vibrato_audio.h"
 
@@ -30,6 +31,8 @@ AudioConnection patchCord4(percussionEnv, 0, organOut, 1);
 AudioFilterBiquad antialias;
 AudioConnection patchCord5(organOut, 0, antialias, 0);
 
+// Leslie 122
+Preamp preamp;
 AudioFilterStateVariable crossover;
 AmFm leslieBassR;
 AmFm leslieTrebleR;
@@ -38,29 +41,30 @@ AmFm leslieBassL;
 AmFm leslieTrebleL;
 AudioMixer4 leslieL;
 
-AudioConnection patchCord6(antialias, 0, crossover, 0);
+AudioConnection patchCord6(antialias, 0, preamp, 0);
+AudioConnection patchCord7(preamp, 0, crossover, 0);
 
-AudioConnection patchCord7(crossover, 0, leslieBassR, 0);
-AudioConnection patchCord8(crossover, 2, leslieTrebleR, 0);
-AudioConnection patchCord9(leslieBassR, 0, leslieR, 0);
-AudioConnection patchCord10(leslieTrebleR, 0, leslieR, 1);
+AudioConnection patchCord8(crossover, 0, leslieBassR, 0);
+AudioConnection patchCord9(crossover, 2, leslieTrebleR, 0);
+AudioConnection patchCord10(leslieBassR, 0, leslieR, 0);
+AudioConnection patchCord11(leslieTrebleR, 0, leslieR, 1);
 
-AudioConnection patchCord11(crossover, 0, leslieBassL, 0);
-AudioConnection patchCord12(crossover, 2, leslieTrebleL, 0);
-AudioConnection patchCord13(leslieBassL, 0, leslieL, 0);
-AudioConnection patchCord14(leslieTrebleL, 0, leslieL, 1);
+AudioConnection patchCord12(crossover, 0, leslieBassL, 0);
+AudioConnection patchCord13(crossover, 2, leslieTrebleL, 0);
+AudioConnection patchCord14(leslieBassL, 0, leslieL, 0);
+AudioConnection patchCord15(leslieTrebleL, 0, leslieL, 1);
 
 // Teensy audio board output.
 AudioOutputI2S i2s1;
 AudioControlSGTL5000 audioShield;
-AudioConnection patchCord15(leslieR, 0, i2s1, 0);
-AudioConnection patchCord16(leslieL, 0, i2s1, 1);
+AudioConnection patchCord16(leslieR, 0, i2s1, 0);
+AudioConnection patchCord17(leslieL, 0, i2s1, 1);
 
 #ifdef AUDIO_INTERFACE
 // If the board is configured for USB audio, mirror the i2s output to USB.
 AudioOutputUSB usbAudio;
-AudioConnection patchCord17(leslieR, 0, usbAudio, 0);
-AudioConnection patchCord18(leslieL, 0, usbAudio, 1);
+AudioConnection patchCord18(leslieR, 0, usbAudio, 0);
+AudioConnection patchCord19(leslieL, 0, usbAudio, 1);
 #endif
 
 uint8_t keys[62] = {0};
@@ -90,6 +94,9 @@ void setup() {
     tonewheels.init();
     percussion.init();
     vibrato.init();
+    preamp.init();
+
+    preamp.setK(50.0);
 
     crossover.frequency(800);
     crossover.resonance(0.707);
@@ -140,7 +147,7 @@ void setup() {
     antialias.setLowpass(0, 6000, 0.707);
 
     audioShield.enable();
-    audioShield.volume(0.95);
+    audioShield.volume(0.5);
 
     usbMIDI.begin();
     usbMIDI.setHandleControlChange(handleControlChange);
