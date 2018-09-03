@@ -146,10 +146,10 @@ void setup() {
     organOut.gain(2, 0);
     organOut.gain(3, 0);
 
-    leslieR.gain(0, 0.50); // bass
-    leslieR.gain(1, 0.50); // treble
-    leslieL.gain(0, 0.50); // bass
-    leslieL.gain(1, 0.50); // treble
+    leslieR.gain(0, 0.70); // bass
+    leslieR.gain(1, 0.30); // treble
+    leslieL.gain(0, 0.70); // bass
+    leslieL.gain(1, 0.30); // treble
 
     vibrato.setMode(C3);
     antialias.setLowpass(0, 6000, 0.707);
