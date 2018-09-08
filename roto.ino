@@ -87,15 +87,8 @@ uint8_t midiControl[127] = {0};
 #define MANUAL_KEY_61 (MANUAL_KEY_0 + 61)
 
 #define CC_SWELL (11)
-#define CC_DRAWBAR_1 (70)
-#define CC_DRAWBAR_2 (71)
-#define CC_DRAWBAR_3 (72)
-#define CC_DRAWBAR_4 (73)
-#define CC_DRAWBAR_5 (74)
-#define CC_DRAWBAR_6 (75)
-#define CC_DRAWBAR_7 (76)
-#define CC_DRAWBAR_8 (77)
-#define CC_DRAWBAR_9 (78)
+#define CC_DRAWBAR_0 (69)
+#define CC_DRAWBAR_9 (CC_DRAWBAR_0 + 9)
 #define CC_PERCUSSION (87)
 #define CC_PERCUSSION_FAST (88)
 #define CC_PERCUSSION_SOFT (89)
@@ -120,10 +113,10 @@ void reset() {
     memset(midiControl, 0, 127);
 
     // Set drawbars to Green Onions.
-    midiControl[CC_DRAWBAR_1] = 127;
-    midiControl[CC_DRAWBAR_2] = 127;
-    midiControl[CC_DRAWBAR_3] = 127;
-    midiControl[CC_DRAWBAR_4] = 127;
+    midiControl[CC_DRAWBAR_0 + 1] = 127;
+    midiControl[CC_DRAWBAR_0 + 2] = 127;
+    midiControl[CC_DRAWBAR_0 + 3] = 127;
+    midiControl[CC_DRAWBAR_0 + 4] = 127;
 }
 
 void setup() {
@@ -214,15 +207,9 @@ void fullPolyphony() {
 }
 
 void randomDrawbars() {
-    midiControl[CC_DRAWBAR_1] = random(0, 127);
-    midiControl[CC_DRAWBAR_2] = random(0, 127);
-    midiControl[CC_DRAWBAR_3] = random(0, 127);
-    midiControl[CC_DRAWBAR_4] = random(0, 127);
-    midiControl[CC_DRAWBAR_5] = random(0, 127);
-    midiControl[CC_DRAWBAR_6] = random(0, 127);
-    midiControl[CC_DRAWBAR_7] = random(0, 127);
-    midiControl[CC_DRAWBAR_8] = random(0, 127);
-    midiControl[CC_DRAWBAR_9] = random(0, 127);
+    for (int i = 1; i <= 9; i++) {
+        midiControl[CC_DRAWBAR_0 + i] = random(0, 127);
+    }
     updateTonewheels();
 }
 
@@ -317,15 +304,9 @@ void updateTonewheels() {
     uint8_t bars[10] = {0};
     uint8_t percBars[10] = {0};
 
-    bars[1] = quantizeDrawbar(midiControl[CC_DRAWBAR_1]);
-    bars[2] = quantizeDrawbar(midiControl[CC_DRAWBAR_2]);
-    bars[3] = quantizeDrawbar(midiControl[CC_DRAWBAR_3]);
-    bars[4] = quantizeDrawbar(midiControl[CC_DRAWBAR_4]);
-    bars[5] = quantizeDrawbar(midiControl[CC_DRAWBAR_5]);
-    bars[6] = quantizeDrawbar(midiControl[CC_DRAWBAR_6]);
-    bars[7] = quantizeDrawbar(midiControl[CC_DRAWBAR_7]);
-    bars[8] = quantizeDrawbar(midiControl[CC_DRAWBAR_8]);
-    bars[9] = quantizeDrawbar(midiControl[CC_DRAWBAR_9]);
+    for (int i = 1; i < 10; i++) {
+        bars[i] = quantizeDrawbar(midiControl[CC_DRAWBAR_0 + i]);
+    }
 
     if (midiControl[CC_PERCUSSION]) {
         bars[9] = 0;
@@ -375,7 +356,7 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
         updatePercussion();
     } else if (ctrl == CC_PERCUSSION_SOFT) {
         updatePercussion();
-    } else if (ctrl >= CC_DRAWBAR_1 && ctrl <= CC_DRAWBAR_9) {
+    } else if (ctrl > CC_DRAWBAR_0 && ctrl <= CC_DRAWBAR_9) {
         updateTonewheels();
     }
 }
