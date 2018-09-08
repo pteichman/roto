@@ -17,10 +17,6 @@ class Preamp : public AudioStream {
     Preamp() : AudioStream(1, inputQueueArray) {
     }
 
-    void init() {
-        setK(50.0);
-    }
-
     void setK(float k) {
         if (k <= 0) {
             k = 0.0001;

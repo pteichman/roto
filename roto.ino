@@ -89,6 +89,8 @@ uint8_t midiControl[127] = {0};
 #define CC_SWELL (11)
 #define CC_DRAWBAR_0 (69)
 #define CC_DRAWBAR_9 (CC_DRAWBAR_0 + 9)
+#define CC_ROTARY_SPEED (82)
+#define CC_ROTARY_STOP (79)
 #define CC_PERCUSSION (87)
 #define CC_PERCUSSION_FAST (88)
 #define CC_PERCUSSION_SOFT (89)
@@ -117,6 +119,12 @@ void reset() {
     midiControl[CC_DRAWBAR_0 + 2] = 127;
     midiControl[CC_DRAWBAR_0 + 3] = 127;
     midiControl[CC_DRAWBAR_0 + 4] = 127;
+
+    updateLeslieAmplifier();
+    updateLeslieRotation();
+
+    updatePercussionEnvelope();
+    updateTonewheelVolumes();
 }
 
 void setup() {
@@ -124,46 +132,18 @@ void setup() {
 
     AudioMemory(10);
 
-    reset();
-
-    tonewheels.init();
-    percussion.init();
-    vibrato.init();
-
-    swell.gain(1.0);
-
-    preamp.init();
-    preamp.setK(50.0);
-
-    crossover.frequency(800);
-    crossover.resonance(0.707);
     leslieBassR.init();
     leslieTrebleR.init();
     leslieBassL.init();
     leslieTrebleL.init();
 
-    leslieBassR.setTremoloDepth(0.5);
-    leslieTrebleR.setTremoloDepth(0.3);
-    leslieBassL.setTremoloDepth(0.5);
-    leslieTrebleL.setTremoloDepth(0.3);
+    tonewheels.init();
+    percussion.init();
+    vibrato.init();
 
-    leslieBassR.setPhase(0.25);
-    leslieTrebleL.setPhase(0.25);
+    reset();
 
-    // Slow: http://www.dairiki.org/HammondWiki/LeslieRotationSpeed
-    leslieBassR.setRotationRate(0.666);
-    leslieTrebleR.setRotationRate(0.8);
-    leslieBassL.setRotationRate(0.666);
-    leslieTrebleL.setRotationRate(0.8);
-
-    // Fast
-    leslieBassR.setRotationRate(5.7);
-    leslieTrebleR.setRotationRate(6.66);
-    leslieBassL.setRotationRate(5.7);
-    leslieTrebleL.setRotationRate(6.66);
-
-    updatePercussion();
-    updateTonewheels();
+    swell.gain(1.0);
 
     organOut.gain(0, 0.50); // tonewheels + vibrato
     organOut.gain(1, 0.50); // percussionEnv
@@ -210,10 +190,10 @@ void randomDrawbars() {
     for (int i = 1; i <= 9; i++) {
         midiControl[CC_DRAWBAR_0 + i] = random(0, 127);
     }
-    updateTonewheels();
+    updateTonewheelVolumes();
 }
 
-void handleNoteOn(byte chan, byte note, byte vel) {
+void handleNoteOn(byte chan, byte note, byte velocity) {
     Serial.print("Note on: ");
     Serial.print(note);
     Serial.print("\n");
@@ -223,12 +203,12 @@ void handleNoteOn(byte chan, byte note, byte vel) {
         return;
     }
 
-    midiKeys[note] = vel;
+    midiKeys[note] = velocity;
     if (note <= MANUAL_KEY_0 || note > MANUAL_KEY_61) {
         return;
     }
 
-    updateTonewheels();
+    updateTonewheelVolumes();
 
     if (++numKeysDown == 1 && midiControl[CC_PERCUSSION]) {
         percussionEnv.noteOn();
@@ -253,10 +233,10 @@ void handleNoteOff(byte chan, byte note, byte vel) {
         percussionEnv.noteOff();
     }
 
-    updateTonewheels();
+    updateTonewheelVolumes();
 }
 
-void updatePercussion() {
+void updatePercussionEnvelope() {
     percussionEnv.delay(0.0);
     percussionEnv.attack(0.1);
     percussionEnv.sustain(0.0);
@@ -300,10 +280,12 @@ uint8_t quantizeDrawbar(uint8_t val) {
     return pos;
 }
 
-void updateTonewheels() {
-    uint8_t bars[10] = {0};
-    uint8_t percBars[10] = {0};
+uint8_t bars[10] = {0};
+uint16_t volumes[92] = {0};
+uint8_t percBars[10] = {0};
+uint16_t percVolumes[92] = {0};
 
+void updateTonewheelVolumes() {
     for (int i = 1; i < 10; i++) {
         bars[i] = quantizeDrawbar(midiControl[CC_DRAWBAR_0 + i]);
     }
@@ -317,14 +299,51 @@ void updateTonewheels() {
         }
     }
 
-    uint16_t volumes[92] = {0};
-    uint16_t percVolumes[92] = {0};
-
     manual_fill_volumes(&midiKeys[MANUAL_KEY_0], percBars, percVolumes);
     percussion.setVolumes(percVolumes);
 
     manual_fill_volumes(&midiKeys[MANUAL_KEY_0], bars, volumes);
     tonewheels.setVolumes(volumes);
+}
+
+void updateLeslieAmplifier() {
+    preamp.setK(50.0);
+    crossover.frequency(800);
+    crossover.resonance(0.707);
+}
+
+void updateLeslieRotation() {
+    // Reset some things that should be constant.
+    leslieBassR.setTremoloDepth(0.5);
+    leslieTrebleR.setTremoloDepth(0.3);
+    leslieBassL.setTremoloDepth(0.5);
+    leslieTrebleL.setTremoloDepth(0.3);
+
+    leslieBassR.setPhase(0.25);
+    leslieTrebleL.setPhase(0.25);
+
+    // These Leslie speeds are from
+    // http://www.dairiki.org/HammondWiki/LeslieRotationSpeed
+
+    if (midiControl[CC_ROTARY_STOP]) {
+        // Stop
+        leslieBassR.setRotationRate(0);
+        leslieTrebleR.setRotationRate(0);
+        leslieBassL.setRotationRate(0);
+        leslieTrebleL.setRotationRate(0);
+    } else if (midiControl[CC_ROTARY_SPEED]) {
+        // Fast
+        leslieBassR.setRotationRate(5.7);
+        leslieTrebleR.setRotationRate(6.66);
+        leslieBassL.setRotationRate(5.7);
+        leslieTrebleL.setRotationRate(6.66);
+    } else {
+        // Slow
+        leslieBassR.setRotationRate(0.666);
+        leslieTrebleR.setRotationRate(0.8);
+        leslieBassL.setRotationRate(0.666);
+        leslieTrebleL.setRotationRate(0.8);
+    }
 }
 
 float remap(float v, float oldmin, float oldmax, float newmin, float newmax) {
@@ -344,20 +363,22 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
     Serial.println();
 
     if (ctrl & 0x80) {
-        midiControl[ctrl] = val;
+        return;
     }
+
+    midiControl[ctrl] = val;
 
     if (ctrl == CC_SWELL) {
         swell.gain(remap((float)val, 0, 127, 0, 5));
     } else if (ctrl == CC_PERCUSSION) {
-        updatePercussion();
-        updateTonewheels();
+        updatePercussionEnvelope();
+        updateTonewheelVolumes();
     } else if (ctrl == CC_PERCUSSION_FAST) {
-        updatePercussion();
+        updatePercussionEnvelope();
     } else if (ctrl == CC_PERCUSSION_SOFT) {
-        updatePercussion();
+        updatePercussionEnvelope();
     } else if (ctrl > CC_DRAWBAR_0 && ctrl <= CC_DRAWBAR_9) {
-        updateTonewheels();
+        updateTonewheelVolumes();
     }
 }
 

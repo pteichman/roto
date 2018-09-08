@@ -259,11 +259,11 @@ uint32_t manual_fill_volumes(uint8_t keys[62], uint8_t drawbars[10], uint16_t re
     for (int k = 1; k < 62; k++) {
         for (int d = 1; d < 10; d++) {
             int t = tonewheel(k, d);
-            totals[t] += drawvols[d];
+            totals[t] += drawvols[8];
             if (keys[k] == 0 || drawbars[d] == 0) {
                 continue;
             }
-            gains[t] += drawvols[d] * drawbars[d];
+            gains[t] += drawvols[drawbars[d]];
         }
     }
 
