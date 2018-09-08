@@ -83,6 +83,9 @@ AudioConnection patchCord20(leslieL, 0, usbAudio, 1);
 uint8_t midiKeys[127] = {0};
 uint8_t midiControl[127] = {0};
 
+#define MANUAL_KEY_0 (35)
+#define MANUAL_KEY_61 (MANUAL_KEY_0 + 61)
+
 #define CC_DRAWBAR_1 (70)
 #define CC_DRAWBAR_2 (71)
 #define CC_DRAWBAR_3 (72)
@@ -97,7 +100,6 @@ uint8_t midiControl[127] = {0};
 #define CC_PERCUSSION_SOFT (89)
 #define CC_PERCUSSION_THIRD (95) // is this correct?
 
-uint8_t keys[62] = {0};
 uint16_t volumes[92] = {0};
 uint16_t percVolumes[92] = {0};
 
@@ -233,15 +235,14 @@ void handleNoteOn(byte chan, byte note, byte vel) {
 
     // MIDI notes always have the high bit unset, but just in case.
     if (note & 0x80) {
-        midiKeys[note & 0x7f] = vel;
-    }
-
-    int key = note2key(note);
-    if (key < 1 || key > 61) {
         return;
     }
 
-    keys[key] = 1;
+    midiKeys[note & 0x7f] = vel;
+    if (note <= MANUAL_KEY_0 || note > MANUAL_KEY_61) {
+        return;
+    }
+
     updateTonewheels();
 
     if (++numKeysDown == 1 && midiControl[CC_PERCUSSION]) {
@@ -256,8 +257,8 @@ void handleNoteOff(byte chan, byte note, byte vel) {
     Serial.print(note);
     Serial.print("\n");
 
-    int key = note2key(note);
-    if (key < 1 || key > 61) {
+    midiKeys[note & 0x7f] = vel;
+    if (note <= MANUAL_KEY_0 || note > MANUAL_KEY_61) {
         return;
     }
 
@@ -265,7 +266,6 @@ void handleNoteOff(byte chan, byte note, byte vel) {
         percussionEnv.noteOff();
     }
 
-    keys[key] = 0;
     updateTonewheels();
 }
 
@@ -336,10 +336,10 @@ void updateTonewheels() {
         }
     }
 
-    manual_fill_volumes(keys, percBars, percVolumes);
+    manual_fill_volumes(&midiKeys[MANUAL_KEY_0], percBars, percVolumes);
     percussion.setVolumes(percVolumes);
 
-    manual_fill_volumes(keys, bars, volumes);
+    manual_fill_volumes(&midiKeys[MANUAL_KEY_0], bars, volumes);
     tonewheels.setVolumes(volumes);
 }
 
@@ -391,7 +391,7 @@ void showKeys() {
         Serial.print("keys[");
         Serial.print(i);
         Serial.print("] = ");
-        Serial.print(keys[i]);
+        Serial.print(midiKeys[MANUAL_KEY_0 + i]);
         Serial.print("\n");
     }
 }
