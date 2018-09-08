@@ -86,6 +86,7 @@ uint8_t midiControl[127] = {0};
 #define MANUAL_KEY_0 (35)
 #define MANUAL_KEY_61 (MANUAL_KEY_0 + 61)
 
+#define CC_SWELL (11)
 #define CC_DRAWBAR_1 (70)
 #define CC_DRAWBAR_2 (71)
 #define CC_DRAWBAR_3 (72)
@@ -99,9 +100,6 @@ uint8_t midiControl[127] = {0};
 #define CC_PERCUSSION_FAST (88)
 #define CC_PERCUSSION_SOFT (89)
 #define CC_PERCUSSION_THIRD (95) // is this correct?
-
-uint16_t volumes[92] = {0};
-uint16_t percVolumes[92] = {0};
 
 // numKeysDown is used to keep the percussion effect single triggered:
 // only the first key down affects the percussion setting.
@@ -238,7 +236,7 @@ void handleNoteOn(byte chan, byte note, byte vel) {
         return;
     }
 
-    midiKeys[note & 0x7f] = vel;
+    midiKeys[note] = vel;
     if (note <= MANUAL_KEY_0 || note > MANUAL_KEY_61) {
         return;
     }
@@ -248,8 +246,6 @@ void handleNoteOn(byte chan, byte note, byte vel) {
     if (++numKeysDown == 1 && midiControl[CC_PERCUSSION]) {
         percussionEnv.noteOn();
     }
-
-    showVolumes();
 }
 
 void handleNoteOff(byte chan, byte note, byte vel) {
@@ -257,7 +253,11 @@ void handleNoteOff(byte chan, byte note, byte vel) {
     Serial.print(note);
     Serial.print("\n");
 
-    midiKeys[note & 0x7f] = vel;
+    if (note & 0x80) {
+        return;
+    }
+
+    midiKeys[note] = 0;
     if (note <= MANUAL_KEY_0 || note > MANUAL_KEY_61) {
         return;
     }
@@ -336,6 +336,9 @@ void updateTonewheels() {
         }
     }
 
+    uint16_t volumes[92] = {0};
+    uint16_t percVolumes[92] = {0};
+
     manual_fill_volumes(&midiKeys[MANUAL_KEY_0], percBars, percVolumes);
     percussion.setVolumes(percVolumes);
 
@@ -363,25 +366,16 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
         midiControl[ctrl] = val;
     }
 
-    if (ctrl == 11) {
+    if (ctrl == CC_SWELL) {
         swell.gain(remap((float)val, 0, 127, 0, 5));
-    }
-
-    if (ctrl == 16) {
-        organOut.gain(0, float(127) / float(val));
-    }
-
-    if (ctrl == CC_PERCUSSION) {
+    } else if (ctrl == CC_PERCUSSION) {
         updatePercussion();
         updateTonewheels();
-    }
-    if (ctrl == CC_PERCUSSION_FAST) {
+    } else if (ctrl == CC_PERCUSSION_FAST) {
         updatePercussion();
-    }
-    if (ctrl == CC_PERCUSSION_SOFT) {
+    } else if (ctrl == CC_PERCUSSION_SOFT) {
         updatePercussion();
-    }
-    if (ctrl >= CC_DRAWBAR_1 && ctrl <= CC_DRAWBAR_9) {
+    } else if (ctrl >= CC_DRAWBAR_1 && ctrl <= CC_DRAWBAR_9) {
         updateTonewheels();
     }
 }
@@ -396,7 +390,7 @@ void showKeys() {
     }
 }
 
-void showVolumes() {
+void showVolumes(uint16_t volumes[92]) {
     for (int i = 0; i < 92; i++) {
         Serial.print("volumes[");
         Serial.print(i);
