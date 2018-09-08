@@ -73,16 +73,33 @@ AudioConnection patchCord19(leslieR, 0, usbAudio, 0);
 AudioConnection patchCord20(leslieL, 0, usbAudio, 1);
 #endif
 
+// MIDI state. keys[n] will be nonzero if a key is down (value being
+// the most recent velocity). control[n] is the most recent value of a
+// control message.
+//
+// In both cases, the highest bit indicates whether the value is the
+// result of a message (1 if yes, 0 if it hasn't changed since
+// initialization.
+uint8_t midiKeys[127] = {0};
+uint8_t midiControl[127] = {0};
+
+#define CC_DRAWBAR_1 (70)
+#define CC_DRAWBAR_2 (71)
+#define CC_DRAWBAR_3 (72)
+#define CC_DRAWBAR_4 (73)
+#define CC_DRAWBAR_5 (74)
+#define CC_DRAWBAR_6 (75)
+#define CC_DRAWBAR_7 (76)
+#define CC_DRAWBAR_8 (77)
+#define CC_DRAWBAR_9 (78)
+#define CC_PERCUSSION (87)
+#define CC_PERCUSSION_FAST (88)
+#define CC_PERCUSSION_SOFT (89)
+#define CC_PERCUSSION_THIRD (95) // is this correct?
+
 uint8_t keys[62] = {0};
-uint8_t drawbars[10] = {0};
 uint16_t volumes[92] = {0};
 uint16_t percVolumes[92] = {0};
-
-// Current state of the percussion settings.
-uint8_t percOn = 1;
-uint8_t percThird = 0;
-uint8_t percFast = 0;
-uint8_t percSoft = 0;
 
 // numKeysDown is used to keep the percussion effect single triggered:
 // only the first key down affects the percussion setting.
@@ -92,10 +109,29 @@ void handleNoteOn(byte chan, byte note, byte vel);
 void handleNoteOff(byte chan, byte note, byte vel);
 void handleControlChange(byte chan, byte ctrl, byte val);
 
+// reset restores everything to just-booted state:
+// 1) it thinks all keys are up
+// 2) drawbar registration is set to 888800000
+// 3) percussion is off, vibrato is set to C1
+// 4) the Leslie is set to slow
+void reset() {
+    // Release all keys and reset all control settings.
+    memset(midiKeys, 0, 127);
+    memset(midiControl, 0, 127);
+
+    // Set drawbars to Green Onions.
+    midiControl[CC_DRAWBAR_1] = 127;
+    midiControl[CC_DRAWBAR_2] = 127;
+    midiControl[CC_DRAWBAR_3] = 127;
+    midiControl[CC_DRAWBAR_4] = 127;
+}
+
 void setup() {
     Serial.begin(115200);
 
     AudioMemory(10);
+
+    reset();
 
     tonewheels.init();
     percussion.init();
@@ -132,11 +168,6 @@ void setup() {
     leslieTrebleR.setRotationRate(6.66);
     leslieBassL.setRotationRate(5.7);
     leslieTrebleL.setRotationRate(6.66);
-
-    drawbars[1] = 8;
-    drawbars[2] = 8;
-    drawbars[3] = 8;
-    drawbars[4] = 8;
 
     updatePercussion();
     updateTonewheels();
@@ -183,16 +214,27 @@ void fullPolyphony() {
 }
 
 void randomDrawbars() {
-    for (int d = 1; d < 10; d++) {
-        drawbars[d] = random(0, 9);
-        updateTonewheels();
-    }
+    midiControl[CC_DRAWBAR_1] = random(0, 127);
+    midiControl[CC_DRAWBAR_2] = random(0, 127);
+    midiControl[CC_DRAWBAR_3] = random(0, 127);
+    midiControl[CC_DRAWBAR_4] = random(0, 127);
+    midiControl[CC_DRAWBAR_5] = random(0, 127);
+    midiControl[CC_DRAWBAR_6] = random(0, 127);
+    midiControl[CC_DRAWBAR_7] = random(0, 127);
+    midiControl[CC_DRAWBAR_8] = random(0, 127);
+    midiControl[CC_DRAWBAR_9] = random(0, 127);
+    updateTonewheels();
 }
 
 void handleNoteOn(byte chan, byte note, byte vel) {
     Serial.print("Note on: ");
     Serial.print(note);
     Serial.print("\n");
+
+    // MIDI notes always have the high bit unset, but just in case.
+    if (note & 0x80) {
+        midiKeys[note & 0x7f] = vel;
+    }
 
     int key = note2key(note);
     if (key < 1 || key > 61) {
@@ -202,9 +244,11 @@ void handleNoteOn(byte chan, byte note, byte vel) {
     keys[key] = 1;
     updateTonewheels();
 
-    if (++numKeysDown == 1 && percOn) {
+    if (++numKeysDown == 1 && midiControl[CC_PERCUSSION]) {
         percussionEnv.noteOn();
     }
+
+    showVolumes();
 }
 
 void handleNoteOff(byte chan, byte note, byte vel) {
@@ -217,7 +261,7 @@ void handleNoteOff(byte chan, byte note, byte vel) {
         return;
     }
 
-    if (--numKeysDown == 0 && percOn) {
+    if (--numKeysDown == 0 && midiControl[CC_PERCUSSION]) {
         percussionEnv.noteOff();
     }
 
@@ -231,32 +275,64 @@ void updatePercussion() {
     percussionEnv.sustain(0.0);
     percussionEnv.release(0.0);
 
-    if (percFast) {
+    if (midiControl[CC_PERCUSSION_FAST]) {
         percussionEnv.decay(300.0);
     } else {
         percussionEnv.decay(630.0);
     }
 
-    if (percSoft) {
+    if (midiControl[CC_PERCUSSION_SOFT]) {
         organOut.gain(1, 0.25);
     } else {
         organOut.gain(1, 0.50);
     }
 }
 
+// quantizeDrawbar maps the 0..127 range of MIDI CC to 0..8.
+uint8_t quantizeDrawbar(uint8_t val) {
+    int pos = 0;
+    if (val < 16) {
+        pos = 0;
+    } else if (val < 32) {
+        pos = 1;
+    } else if (val < 48) {
+        pos = 2;
+    } else if (val < 64) {
+        pos = 3;
+    } else if (val < 80) {
+        pos = 4;
+    } else if (val < 96) {
+        pos = 5;
+    } else if (val < 112) {
+        pos = 6;
+    } else if (val < 127) {
+        pos = 7;
+    } else {
+        pos = 8;
+    }
+    return pos;
+}
+
 void updateTonewheels() {
-    // Copy the drawbars so we can tweak them based on percussion
-    // settings (enabling percussion steals a drawbar).
     uint8_t bars[10] = {0};
-    memcpy(bars, drawbars, 10);
     uint8_t percBars[10] = {0};
 
-    if (percOn) {
+    bars[1] = quantizeDrawbar(midiControl[CC_DRAWBAR_1]);
+    bars[2] = quantizeDrawbar(midiControl[CC_DRAWBAR_2]);
+    bars[3] = quantizeDrawbar(midiControl[CC_DRAWBAR_3]);
+    bars[4] = quantizeDrawbar(midiControl[CC_DRAWBAR_4]);
+    bars[5] = quantizeDrawbar(midiControl[CC_DRAWBAR_5]);
+    bars[6] = quantizeDrawbar(midiControl[CC_DRAWBAR_6]);
+    bars[7] = quantizeDrawbar(midiControl[CC_DRAWBAR_7]);
+    bars[8] = quantizeDrawbar(midiControl[CC_DRAWBAR_8]);
+    bars[9] = quantizeDrawbar(midiControl[CC_DRAWBAR_9]);
+
+    if (midiControl[CC_PERCUSSION]) {
         bars[9] = 0;
-        if (percThird) {
-            percBars[5] = 32;
+        if (midiControl[CC_PERCUSSION_THIRD]) {
+            percBars[5] = quantizeDrawbar(127);
         } else {
-            percBars[4] = 32;
+            percBars[4] = quantizeDrawbar(127);
         }
     }
 
@@ -283,6 +359,10 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
     Serial.print(val, DEC);
     Serial.println();
 
+    if (ctrl & 0x80) {
+        midiControl[ctrl] = val;
+    }
+
     if (ctrl == 11) {
         swell.gain(remap((float)val, 0, 127, 0, 5));
     }
@@ -291,44 +371,17 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
         organOut.gain(0, float(127) / float(val));
     }
 
-    if (ctrl == 87) {
-        percOn = val;
+    if (ctrl == CC_PERCUSSION) {
         updatePercussion();
         updateTonewheels();
     }
-    if (ctrl == 88) {
-        percFast = val;
+    if (ctrl == CC_PERCUSSION_FAST) {
         updatePercussion();
     }
-    if (ctrl == 89) {
-        percSoft = val;
+    if (ctrl == CC_PERCUSSION_SOFT) {
         updatePercussion();
     }
-
-    if (ctrl >= 70 && ctrl < 79) {
-        int drawbar = ctrl - 69;
-        int pos = 0;
-        if (val < 16) {
-            pos = 0;
-        } else if (val < 32) {
-            pos = 1;
-        } else if (val < 48) {
-            pos = 2;
-        } else if (val < 64) {
-            pos = 3;
-        } else if (val < 80) {
-            pos = 4;
-        } else if (val < 96) {
-            pos = 5;
-        } else if (val < 112) {
-            pos = 6;
-        } else if (val < 127) {
-            pos = 7;
-        } else {
-            pos = 8;
-        }
-
-        drawbars[drawbar] = pos;
+    if (ctrl >= CC_DRAWBAR_1 && ctrl <= CC_DRAWBAR_9) {
         updateTonewheels();
     }
 }
@@ -404,16 +457,16 @@ void statusVolume() {
 
 void statusPerc() {
     Serial.print("percOn=");
-    Serial.print(percOn);
+    Serial.print(midiControl[CC_PERCUSSION]);
     Serial.print("    ");
     Serial.print("percFast=");
-    Serial.print(percFast);
+    Serial.print(midiControl[CC_PERCUSSION_FAST]);
     Serial.print("    ");
     Serial.print("percSoft=");
-    Serial.print(percSoft);
+    Serial.print(midiControl[CC_PERCUSSION_SOFT]);
     Serial.print("    ");
     Serial.print("percThird=");
-    Serial.print(percThird);
+    Serial.print(midiControl[CC_PERCUSSION_THIRD]);
     Serial.print("    ");
     Serial.println();
 }

@@ -263,7 +263,7 @@ uint32_t manual_fill_volumes(uint8_t keys[62], uint8_t drawbars[10], uint16_t re
             if (keys[k] == 0 || drawbars[d] == 0) {
                 continue;
             }
-            gains[t] += drawvols[d];
+            gains[t] += drawvols[d] * drawbars[d];
         }
     }
 
