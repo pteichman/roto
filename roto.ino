@@ -354,6 +354,12 @@ float remap(float v, float oldmin, float oldmax, float newmin, float newmax) {
 // Electro 3 MIDI implementation:
 // http://www.nordkeyboards.com/sites/default/files/files/downloads/manuals/nord-electro-3/Nord%20Electro%203%20English%20User%20Manual%20v3.x%20Edition%203.1.pdf
 void handleControlChange(byte chan, byte ctrl, byte val) {
+    if (ctrl == 1) {
+	// Skip logging aftertouch messages, so the serial log isn't
+	// spammed with them.
+	return;
+    }
+
     Serial.print("Control Change, ch=");
     Serial.print(chan, DEC);
     Serial.print(", control=");
