@@ -121,6 +121,13 @@ void reset() {
     midiControl[CC_DRAWBAR_0 + 3] = 127;
     midiControl[CC_DRAWBAR_0 + 4] = 127;
 
+    // Reset Leslie rotation position. Our R microphone leads the L by
+    // 90 degrees.
+    leslieBassL.setPhase(0);
+    leslieTrebleL.setPhase(0);
+    leslieBassR.setPhase(0.25);
+    leslieTrebleR.setPhase(0.25);
+
     updateLeslieAmplifier();
     updateLeslieRotation();
 
@@ -156,7 +163,7 @@ void setup() {
     leslieL.gain(0, 0.70); // bass
     leslieL.gain(1, 0.30); // treble
 
-    vibrato.setMode(C3);
+    vibrato.setMode(Off);
     antialias.setLowpass(0, 6000, 0.707);
 
     audioShield.enable();
@@ -302,9 +309,6 @@ void updateLeslieRotation() {
     leslieBassL.setTremoloDepth(0.5);
     leslieTrebleL.setTremoloDepth(0.3);
 
-    leslieBassR.setPhase(0.25);
-    leslieTrebleL.setPhase(0.25);
-
     // These Leslie speeds are from
     // http://www.dairiki.org/HammondWiki/LeslieRotationSpeed
 
@@ -358,7 +362,7 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
     midiControl[ctrl] = val;
 
     if (ctrl == CC_SWELL) {
-        swell.gain(remap((float)val, 0, 127, 0, 5));
+        swell.gain(remap((float)val, 0, 127, 0, 2.5));
     } else if (ctrl == CC_RESET) {
         updateReset();
     } else if (ctrl == CC_PERCUSSION) {
