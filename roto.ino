@@ -87,6 +87,7 @@ uint8_t midiControl[127] = {0};
 #define MANUAL_KEY_61 (MANUAL_KEY_0 + 61)
 
 #define CC_SWELL (11)
+#define CC_RESET (46)
 #define CC_DRAWBAR_0 (69)
 #define CC_DRAWBAR_9 (CC_DRAWBAR_0 + 9)
 #define CC_ROTARY_SPEED (82)
@@ -236,6 +237,13 @@ void handleNoteOff(byte chan, byte note, byte vel) {
     updateTonewheelVolumes();
 }
 
+void updateReset() {
+    if (midiControl[CC_RESET]) {
+        midiControl[CC_RESET] = 0;
+        reset();
+    }
+}
+
 void updatePercussionEnvelope() {
     percussionEnv.delay(0.0);
     percussionEnv.attack(0.1);
@@ -255,31 +263,6 @@ void updatePercussionEnvelope() {
     }
 }
 
-// quantizeDrawbar maps the 0..127 range of MIDI CC to 0..8.
-uint8_t quantizeDrawbar(uint8_t val) {
-    int pos = 0;
-    if (val < 16) {
-        pos = 0;
-    } else if (val < 32) {
-        pos = 1;
-    } else if (val < 48) {
-        pos = 2;
-    } else if (val < 64) {
-        pos = 3;
-    } else if (val < 80) {
-        pos = 4;
-    } else if (val < 96) {
-        pos = 5;
-    } else if (val < 112) {
-        pos = 6;
-    } else if (val < 127) {
-        pos = 7;
-    } else {
-        pos = 8;
-    }
-    return pos;
-}
-
 uint8_t bars[10] = {0};
 uint16_t volumes[92] = {0};
 uint8_t percBars[10] = {0};
@@ -287,15 +270,15 @@ uint16_t percVolumes[92] = {0};
 
 void updateTonewheelVolumes() {
     for (int i = 1; i < 10; i++) {
-        bars[i] = quantizeDrawbar(midiControl[CC_DRAWBAR_0 + i]);
+        bars[i] = manual_quantize_drawbar(midiControl[CC_DRAWBAR_0 + i]);
     }
 
     if (midiControl[CC_PERCUSSION]) {
         bars[9] = 0;
         if (midiControl[CC_PERCUSSION_THIRD]) {
-            percBars[5] = quantizeDrawbar(127);
+            percBars[5] = manual_quantize_drawbar(127);
         } else {
-            percBars[4] = quantizeDrawbar(127);
+            percBars[4] = manual_quantize_drawbar(127);
         }
     }
 
@@ -355,9 +338,9 @@ float remap(float v, float oldmin, float oldmax, float newmin, float newmax) {
 // http://www.nordkeyboards.com/sites/default/files/files/downloads/manuals/nord-electro-3/Nord%20Electro%203%20English%20User%20Manual%20v3.x%20Edition%203.1.pdf
 void handleControlChange(byte chan, byte ctrl, byte val) {
     if (ctrl == 1) {
-	// Skip logging aftertouch messages, so the serial log isn't
-	// spammed with them.
-	return;
+        // Skip logging aftertouch messages, so the serial log isn't
+        // spammed with them.
+        return;
     }
 
     Serial.print("Control Change, ch=");
@@ -376,6 +359,8 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
 
     if (ctrl == CC_SWELL) {
         swell.gain(remap((float)val, 0, 127, 0, 5));
+    } else if (ctrl == CC_RESET) {
+        updateReset();
     } else if (ctrl == CC_PERCUSSION) {
         updatePercussionEnvelope();
         updateTonewheelVolumes();

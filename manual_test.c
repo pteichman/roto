@@ -10,6 +10,14 @@
 
 #include "manual.h"
 
+uint32_t total_volume(uint16_t volumes[92]) {
+    uint32_t sum;
+    for (int i = 0; i < 92; i++) {
+        sum += (uint32_t)volumes[i];
+    }
+    return sum;
+}
+
 TEST test_manual_foldback() {
     // Lower foldback: wrap tonewheels < 13 back into the 13..92 range.
     for (int i = 1; i < 13; i++) {
@@ -71,10 +79,7 @@ TEST test_manual_volume_overflow() {
     uint32_t total = manual_fill_volumes(keys, drawbars, ret);
 
     // The total volumes here cannot overflow the expected Q19 range.
-    uint32_t sum = 0;
-    for (int i = 0; i < 92; i++) {
-        sum += ret[i];
-    }
+    uint32_t sum = total_volume(ret);
     ASSERT_EQ_FMT(total, sum, "%d");
 
     if (sum > (1 << 19)) {
@@ -137,7 +142,41 @@ TEST test_manual_volume_underflow() {
     PASS();
 }
 
+// test_manual_drawbar_incr ensures one tonewheel gets louder as its
+// drawbar is extended.
+TEST test_manual_drawbar_incr() {
+    uint8_t keys[62] = {0};
+    uint8_t drawbars[10] = {0};
+    uint16_t ret[92] = {0};
+
+    // Hold down key 30.
+    keys[30] = 1;
+
+    for (int d = 1; d < 10; d++) {
+        int steps = 0;
+        uint32_t prevsum = 0;
+
+        for (int v = 0; v < 128; v++) {
+            drawbars[d] = manual_quantize_drawbar(v);
+            manual_fill_volumes(keys, drawbars, ret);
+
+            uint32_t sum = total_volume(ret);
+            if (sum != prevsum) {
+                steps++;
+            }
+
+            prevsum = sum;
+            drawbars[d] = 0;
+        }
+
+        ASSERT_EQ_FMT(8, steps, "%d");
+    }
+
+    PASS();
+}
+
 GREATEST_SUITE(manual_suite) {
+    RUN_TEST(test_manual_drawbar_incr);
     RUN_TEST(test_manual_foldback);
     RUN_TEST(test_manual_tonewheel);
     RUN_TEST(test_manual_volume_overflow);

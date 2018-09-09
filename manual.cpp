@@ -286,6 +286,31 @@ uint32_t manual_fill_volumes(uint8_t keys[62], uint8_t drawbars[10], uint16_t re
     return total;
 }
 
+// manual_quantize_drawbar maps the 0..127 range of MIDI CC to 0..8.
+uint8_t manual_quantize_drawbar(uint8_t val) {
+    int pos = 0;
+    if (val < 16) {
+        pos = 0;
+    } else if (val < 32) {
+        pos = 1;
+    } else if (val < 48) {
+        pos = 2;
+    } else if (val < 64) {
+        pos = 3;
+    } else if (val < 80) {
+        pos = 4;
+    } else if (val < 96) {
+        pos = 5;
+    } else if (val < 112) {
+        pos = 6;
+    } else if (val < 127) {
+        pos = 7;
+    } else {
+        pos = 8;
+    }
+    return pos;
+}
+
 #if defined(__cplusplus)
 }
 #endif
