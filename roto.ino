@@ -370,6 +370,8 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
         updatePercussionEnvelope();
     } else if (ctrl > CC_DRAWBAR_0 && ctrl <= CC_DRAWBAR_9) {
         updateTonewheelVolumes();
+    } else if (ctrl == CC_ROTARY_STOP || ctrl == CC_ROTARY_SPEED) {
+	updateLeslieRotation();
     }
 }
 
