@@ -142,18 +142,32 @@ void reset() {
 }
 
 enum {
+    NO_TONEWHEEL,
     ONE_TONEWHEEL,
     ALL_DRAWBARS,
     PERCUSSION,
     VIBRATO,
     LESLIE,
     LESLIE_FAST_GROWL,
+    FULL_POLYPHONY,
 };
 
 void preset(int conf) {
     reset();
 
     switch (conf) {
+    case NO_TONEWHEEL:
+        midiControl[CC_DRAWBAR_0 + 1] = 0;
+        midiControl[CC_DRAWBAR_0 + 2] = 0;
+        midiControl[CC_DRAWBAR_0 + 3] = 0;
+        midiControl[CC_DRAWBAR_0 + 4] = 0;
+        midiControl[CC_DRAWBAR_0 + 5] = 0;
+        midiControl[CC_DRAWBAR_0 + 6] = 0;
+        midiControl[CC_DRAWBAR_0 + 7] = 0;
+        midiControl[CC_DRAWBAR_0 + 8] = 0;
+        midiControl[CC_DRAWBAR_0 + 9] = 0;
+        midiControl[CC_ROTARY_SPEED] = 0;
+        break;
     case ONE_TONEWHEEL:
         midiControl[CC_DRAWBAR_0 + 1] = 0;
         midiControl[CC_DRAWBAR_0 + 2] = 0;
@@ -179,6 +193,7 @@ void preset(int conf) {
     case PERCUSSION:
         midiControl[CC_PERCUSSION] = 127;
         midiControl[CC_PERCUSSION_THIRD] = 127;
+        midiControl[CC_ROTARY_STOP] = 127;
         break;
     case VIBRATO:
         midiControl[CC_VIBRATO] = 127;
@@ -193,6 +208,20 @@ void preset(int conf) {
         midiControl[CC_ROTARY_STOP] = 0;
         midiControl[CC_ROTARY_SPEED] = 127;
         midiControl[CC_SPEAKER_DRIVE] = 127;
+        break;
+    case FULL_POLYPHONY:
+        // cheating around what sounds like some overflow / sign errors
+        midiControl[CC_DRAWBAR_0 + 1] = 0;
+        midiControl[CC_DRAWBAR_0 + 2] = 0;
+        midiControl[CC_DRAWBAR_0 + 3] = 0;
+        midiControl[CC_DRAWBAR_0 + 4] = 0;
+        midiControl[CC_DRAWBAR_0 + 5] = 0;
+        midiControl[CC_DRAWBAR_0 + 6] = 127;
+        midiControl[CC_DRAWBAR_0 + 7] = 127;
+        midiControl[CC_DRAWBAR_0 + 8] = 127;
+        midiControl[CC_DRAWBAR_0 + 9] = 127;
+        midiControl[CC_ROTARY_SPEED] = 0;
+        fullPolyphony();
         break;
     }
 
@@ -218,7 +247,6 @@ void setup() {
     vibrato.init();
 
     reset();
-    preset(LESLIE_FAST_GROWL);
 
     swell.gain(1.0);
 
