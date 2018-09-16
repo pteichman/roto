@@ -146,6 +146,8 @@ enum {
     ALL_DRAWBARS,
     PERCUSSION,
     VIBRATO,
+    LESLIE,
+    LESLIE_FAST_GROWL,
 };
 
 void preset(int conf) {
@@ -175,14 +177,23 @@ void preset(int conf) {
         midiControl[CC_DRAWBAR_0 + 9] = 127;
         break;
     case PERCUSSION:
-	midiControl[CC_PERCUSSION] = 127;
-	midiControl[CC_PERCUSSION_THIRD] = 127;
-	break;
+        midiControl[CC_PERCUSSION] = 127;
+        midiControl[CC_PERCUSSION_THIRD] = 127;
+        break;
     case VIBRATO:
-	midiControl[CC_VIBRATO] = 127;
-	midiControl[CC_VIBRATO_MODE] = 127;
-	midiControl[CC_ROTARY_STOP] = 127;
-	break;
+        midiControl[CC_VIBRATO] = 127;
+        midiControl[CC_VIBRATO_MODE] = 127;
+        midiControl[CC_ROTARY_STOP] = 127;
+        break;
+    case LESLIE:
+        midiControl[CC_ROTARY_STOP] = 0;
+        midiControl[CC_ROTARY_SPEED] = 0;
+        break;
+    case LESLIE_FAST_GROWL:
+        midiControl[CC_ROTARY_STOP] = 0;
+        midiControl[CC_ROTARY_SPEED] = 127;
+        midiControl[CC_SPEAKER_DRIVE] = 127;
+        break;
     }
 
     updateLeslieAmplifier();
@@ -207,7 +218,7 @@ void setup() {
     vibrato.init();
 
     reset();
-    preset(VIBRATO);
+    preset(LESLIE_FAST_GROWL);
 
     swell.gain(1.0);
 
@@ -316,23 +327,23 @@ void updateReset() {
 }
 
 void updateVibrato() {
-    if (!midiControl[CC_VIBRATO]) {
-	vibrato.setMode(Off);
-    }
-
     uint8_t mode = midiControl[CC_VIBRATO_MODE];
     if (mode == 0) {
-	vibrato.setMode(V1);
+        vibrato.setMode(V1);
     } else if (mode <= 26) {
-	vibrato.setMode(C1);
+        vibrato.setMode(C1);
     } else if (mode <= 51) {
-	vibrato.setMode(V2);
+        vibrato.setMode(V2);
     } else if (mode <= 84) {
-	vibrato.setMode(C2);
+        vibrato.setMode(C2);
     } else if (mode <= 102) {
-	vibrato.setMode(V3);
+        vibrato.setMode(V3);
     } else if (mode <= 127) {
-	vibrato.setMode(C3);
+        vibrato.setMode(C3);
+    }
+
+    if (!midiControl[CC_VIBRATO]) {
+        vibrato.setMode(Off);
     }
 }
 
