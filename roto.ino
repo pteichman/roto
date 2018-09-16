@@ -92,10 +92,13 @@ uint8_t midiControl[127] = {0};
 #define CC_DRAWBAR_9 (CC_DRAWBAR_0 + 9)
 #define CC_ROTARY_SPEED (82)
 #define CC_ROTARY_STOP (79)
+#define CC_VIBRATO_MODE (84)
 #define CC_PERCUSSION (87)
 #define CC_PERCUSSION_FAST (88)
 #define CC_PERCUSSION_SOFT (89)
 #define CC_PERCUSSION_THIRD (95) // is this correct?
+#define CC_VIBRATO (107)
+#define CC_SPEAKER_DRIVE (111)
 
 // numKeysDown is used to keep the percussion effect single triggered:
 // only the first key down affects the percussion setting.
@@ -121,6 +124,9 @@ void reset() {
     midiControl[CC_DRAWBAR_0 + 3] = 127;
     midiControl[CC_DRAWBAR_0 + 4] = 127;
 
+    // Minimal drive by default.
+    midiControl[CC_SPEAKER_DRIVE] = 0;
+
     // Reset Leslie rotation position. Our R microphone leads the L by
     // 90 degrees.
     leslieBassL.setPhase(0);
@@ -130,9 +136,60 @@ void reset() {
 
     updateLeslieAmplifier();
     updateLeslieRotation();
-
     updatePercussionEnvelope();
     updateTonewheelVolumes();
+    updateVibrato();
+}
+
+enum {
+    ONE_TONEWHEEL,
+    ALL_DRAWBARS,
+    PERCUSSION,
+    VIBRATO,
+};
+
+void preset(int conf) {
+    reset();
+
+    switch (conf) {
+    case ONE_TONEWHEEL:
+        midiControl[CC_DRAWBAR_0 + 1] = 0;
+        midiControl[CC_DRAWBAR_0 + 2] = 0;
+        midiControl[CC_DRAWBAR_0 + 3] = 127;
+        midiControl[CC_DRAWBAR_0 + 4] = 0;
+        midiControl[CC_DRAWBAR_0 + 5] = 0;
+        midiControl[CC_DRAWBAR_0 + 6] = 0;
+        midiControl[CC_DRAWBAR_0 + 7] = 0;
+        midiControl[CC_DRAWBAR_0 + 8] = 0;
+        midiControl[CC_DRAWBAR_0 + 9] = 0;
+        break;
+    case ALL_DRAWBARS:
+        midiControl[CC_DRAWBAR_0 + 1] = 127;
+        midiControl[CC_DRAWBAR_0 + 2] = 127;
+        midiControl[CC_DRAWBAR_0 + 3] = 127;
+        midiControl[CC_DRAWBAR_0 + 4] = 127;
+        midiControl[CC_DRAWBAR_0 + 5] = 127;
+        midiControl[CC_DRAWBAR_0 + 6] = 127;
+        midiControl[CC_DRAWBAR_0 + 7] = 127;
+        midiControl[CC_DRAWBAR_0 + 8] = 127;
+        midiControl[CC_DRAWBAR_0 + 9] = 127;
+        break;
+    case PERCUSSION:
+	midiControl[CC_PERCUSSION] = 127;
+	midiControl[CC_PERCUSSION_THIRD] = 127;
+	break;
+    case VIBRATO:
+	midiControl[CC_VIBRATO] = 127;
+	midiControl[CC_VIBRATO_MODE] = 127;
+	midiControl[CC_ROTARY_STOP] = 127;
+	break;
+    }
+
+    updateLeslieAmplifier();
+    updateLeslieRotation();
+    updatePercussionEnvelope();
+    updateTonewheelVolumes();
+    updateVibrato();
 }
 
 void setup() {
@@ -150,6 +207,7 @@ void setup() {
     vibrato.init();
 
     reset();
+    preset(VIBRATO);
 
     swell.gain(1.0);
 
@@ -163,8 +221,14 @@ void setup() {
     leslieL.gain(0, 0.70); // bass
     leslieL.gain(1, 0.30); // treble
 
-    vibrato.setMode(Off);
-    antialias.setLowpass(0, 6000, 0.707);
+    // The antialias filter is here for two purposes:
+    //
+    // 1) To band limit the output of the organ, just in case it
+    // produces something above our Nyquist frequency (22050 Hz)
+    //
+    // 2) To cut the transients when turning on new tonewheels,
+    // reducing key click.
+    antialias.setLowpass(0, 2150, 0.707);
 
     audioShield.enable();
     audioShield.volume(0.5);
@@ -251,6 +315,27 @@ void updateReset() {
     }
 }
 
+void updateVibrato() {
+    if (!midiControl[CC_VIBRATO]) {
+	vibrato.setMode(Off);
+    }
+
+    uint8_t mode = midiControl[CC_VIBRATO_MODE];
+    if (mode == 0) {
+	vibrato.setMode(V1);
+    } else if (mode <= 26) {
+	vibrato.setMode(C1);
+    } else if (mode <= 51) {
+	vibrato.setMode(V2);
+    } else if (mode <= 84) {
+	vibrato.setMode(C2);
+    } else if (mode <= 102) {
+	vibrato.setMode(V3);
+    } else if (mode <= 127) {
+	vibrato.setMode(C3);
+    }
+}
+
 void updatePercussionEnvelope() {
     percussionEnv.delay(0.0);
     percussionEnv.attack(0.1);
@@ -297,17 +382,20 @@ void updateTonewheelVolumes() {
 }
 
 void updateLeslieAmplifier() {
-    preamp.setK(50.0);
+    float k = remap((float)midiControl[CC_SPEAKER_DRIVE], 0, 127, 5.0, 50.0);
+    preamp.setK(k);
     crossover.frequency(800);
     crossover.resonance(0.707);
 }
 
 void updateLeslieRotation() {
     // Reset some things that should be constant.
-    leslieBassR.setTremoloDepth(0.5);
-    leslieTrebleR.setTremoloDepth(0.3);
-    leslieBassL.setTremoloDepth(0.5);
-    leslieTrebleL.setTremoloDepth(0.3);
+    leslieBassR.setTremoloDepth(0.3);
+    leslieTrebleR.setTremoloDepth(0.1);
+    leslieBassL.setTremoloDepth(0.3);
+    leslieTrebleL.setTremoloDepth(0.1);
+
+    // Vibrato in the AMFM blocks currently has some fizz artifacts.
 
     // These Leslie speeds are from
     // http://www.dairiki.org/HammondWiki/LeslieRotationSpeed
@@ -375,7 +463,9 @@ void handleControlChange(byte chan, byte ctrl, byte val) {
     } else if (ctrl > CC_DRAWBAR_0 && ctrl <= CC_DRAWBAR_9) {
         updateTonewheelVolumes();
     } else if (ctrl == CC_ROTARY_STOP || ctrl == CC_ROTARY_SPEED) {
-	updateLeslieRotation();
+        updateLeslieRotation();
+    } else if (ctrl == CC_VIBRATO || ctrl == CC_VIBRATO_MODE) {
+        updateVibrato();
     }
 }
 
